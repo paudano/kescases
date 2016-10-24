@@ -1,0 +1,14 @@
+# Project
+local
+bin
+.snakemake
+
+# Lib
+lib/*
+!lib/NOTES
+!lib/kestrel
+
+# Caches and editor tempfiles
+**/__pycache__
+**/*.swp
+

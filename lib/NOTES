@@ -1,0 +1,11 @@
+The GATK and Picard JAR files must be copied (or linked) to this directory.
+
+Expected files:
+GenomeAnalysisTK.jar
+picard.jar
+
+GATK may be downloaded from:
+https://www.broadinstitute.org/gatk/download/
+
+Picard may be downloaded from:
+http://broadinstitute.github.io/picard/
