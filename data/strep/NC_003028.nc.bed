@@ -1,0 +1,11 @@
+chr	accession	start	end	type	reason
+NC_003028	SRR2072251	1917888	1917912	BADASM	Declining read coverage likely led to a misassembly
+NC_003028	SRR2072306	1	2200000	CONTAMINATION	Evidence of contamination in all PBP genes
+NC_003028	SRR2072379	1	2200000	CONTAMINATION	Evidence of contamination in all PBP genes
+NC_003028	SRR2072342	1	2200000	CONTAMINATION	Evidence of contamination in all PBP genes
+NC_003028	SRR2072298	1	2200000	CONTAMINATION	Evidence of contamination in 2X, 1A, and 2B
+NC_003028	SRR2072339	1	2200000	CONTAMINATION	Evidence of contamination in 2X, 1A, and 2B
+NC_003028	SRR2072351	1	2200000	CONTAMINATION	Evidence of contamination in all PBP genes
+NC_003028	SRR2072219	1	2200000	INCOMPLETE	Incomplete sequence coverage
+NC_003028	SRR2072360	1	2200000	INCOMPLETE	Incomplete sequence coverage
+					

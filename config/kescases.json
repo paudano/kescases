@@ -3,7 +3,7 @@
     "picard": "lib/picard.jar",
     "gatk": "lib/GenomeAnalysisTK.jar",
     "kestrel": "lib/kestrel/kestrel.jar",
-    "kanalyze": "lib/kestrel/kanalyze.jar",
+    "kanalyze": "lib/kestrel/kanalyze.jar"
   },
   "strep": {
     "reference": "data/strep/NC_003028.fasta",

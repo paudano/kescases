@@ -15,6 +15,11 @@
 #include <pthread.h>
 #include <sys/wait.h>
 #include <sched.h>
+#include <dirent.h>
+#include <ctype.h>
+
+#include "pidhash.h"
+#include "pidqueue.h"
 
 
 /* Constants. */
@@ -24,34 +29,45 @@ const int ERR_IO = 2;
 const int ERR_THREAD = 3;
 const int ERR_PARSE = 4;
 
-const int STAT_BUFFER_SIZE = 1024;
+#define HASH_ARRAY_SIZE 16834
+#define NAME_BUF_SIZE   1024
+#define STAT_BUF_SIZE   4096
 
 /* Structures */
-struct proc_monitor_t {
-	long run_time;    /* Run time (ms). */
-	long max_rss;     /* Max resident size (memory usage) in kB. */
-	int exit_status;  /* Process return code. */
-};
+typedef struct ProcMonitorSummary {
+	long runTime;    /* Run time (ms). */
+	long maxRss;     /* Max resident size (memory usage) in kB. */
+	int exitStatus;  /* Process return code. */
+} ProcMonitorSummary;
 
-typedef struct proc_monitor_t proc_monitor_t;
-
-struct trace_rss_t {
+typedef struct TraceArguments {
 	int pid;         /* Process to monitor. */
-	FILE *out_file;  /* File time snapshots are written to. */
-	long start_ms;   /* Start time (ms) since epoch. */
-	int wait_time;   /* Time to wait (s) between snapshots. */
+	FILE *outFile;  /* File time snapshots are written to. */
+	long startTime;   /* Start time (ms) since epoch. */
+	int waitTime;   /* Time to wait (s) between snapshots. */
 	int active;      /* Set to FALSE (zero) to tell the trace process to stop. */
-	long max_rss;    /* Return max resident size (memory usage) in kB. */
-};
+	long maxRss;    /* Return max resident size (memory usage) in kB. */
+} TraceArguments;
 
-typedef struct trace_rss_t trace_rss_t;
+typedef struct ProcSnapshot {
+	long rss;    /* Resident size. */
+	long vsize;  /* Virtual size. */
+	int nproc;  /* Number of processes spawned (including itself) */
+} ProcSnapshot;
+
+typedef struct MonitorThreadStatus {
+	int returnValue;  /* Return value of the process (1 for success, 0 for failure) */
+	int err;          /* errno set when thread exited. */
+	char *msg;        /* Error message if returnValue is 0, otherwise NULL. String is static and should not be freed */
+} MonitorThreadStatus;
 
 /* Function prototypes. */
-void monitorProcess(FILE *outFile, char **argv, int waitTime, proc_monitor_t *monitorInfo, int cpuSet);
-long getResidentSize(int pid);
-void *traceRss(void *traceRssArgs);
+void monitorProcess(FILE *outFile, char **argv, int waitTime, ProcMonitorSummary *monitorSummary, int cpuSet);
+int getSnapshot(pid_t pid, ProcSnapshot *procSnapshot, PidQueue *pidQueue, PidHash *pidHash);
+void *traceProcess(void *traceArgsVoidPtr);
+int isPidDir(const char *charPtr);
 
-void printSummary(proc_monitor_t *monitorInfo);
+void printSummary(ProcMonitorSummary *monitorSummary);
 
 void printHelp(void);
 
@@ -59,8 +75,11 @@ void err(const char *msg, int errCode);
 void errnoErr(const char *msg, int errCode);
 
 /* Program name. */
-const int PROG_NAME_SIZE = 25;
-char *progName = NULL;
+#define PROG_NAME_SIZE 25
+char *progName;
+
+/* Page size (set in main()) */
+int pageSize;
 
 /* Function: main */
 int main(int argc, char **argv) {
@@ -75,9 +94,9 @@ int main(int argc, char **argv) {
 
 	char **endPtr;  /* End pointer for strtol. */
 
-	FILE *outFile;
+	FILE *outFile;  /* Output file handle */
 
-	proc_monitor_t monitorInfo;
+	ProcMonitorSummary monitorSummary;  /* Summary from process monitoring */
 
 	char progNameLocal[PROG_NAME_SIZE];
 	progName = progNameLocal;
@@ -94,14 +113,16 @@ int main(int argc, char **argv) {
 
 	cpuSet = 0x00;
 
+	pageSize = getpagesize();
+
 	/* Set program name for error reporting. */
 	if (argc > 0)
 		strncpy(progName, basename(argv[0]), PROG_NAME_SIZE);
 	else
-		strncpy(progName, "trackmem", PROG_NAME_SIZE);
+		strncpy(progName, "traceproc", PROG_NAME_SIZE);
 
 	/* Process arguments. */
-	while (inOpts == 1 && (option = getopt(argc, argv, "+c:ho:w:")) != -1) {
+	while (inOpts == 1 && (option = getopt(argc, argv, "+c:ho:w:v")) != -1) {
 
 		switch (option) {
 
@@ -153,45 +174,45 @@ int main(int argc, char **argv) {
 	if (outFileName != NULL) {
 		outFile = fopen(outFileName, "w");
 
-		fprintf(outFile, "#n\ttime_ms\tmem_kb\n");
+		fprintf(outFile, "#n\ttime_ms\trss_kb\tvss_kb\tn_proc\n");
 
 	} else {
-		outFile = NULL;
+		outFile = stdout;
 	}
 
 	/* Fork and monitor. */
-	monitorProcess(outFile, argv + optind, waitTime, &monitorInfo, cpuSet);
+	monitorProcess(outFile, argv + optind, waitTime, &monitorSummary, cpuSet);
 
 	/* Close file. */
-	if (outFile != NULL)
+	if (outFile != NULL && outFile != stdout)
 		fclose(outFile);
 
 	/* Print summary. */
 	if (verbose)
-		printSummary(&monitorInfo);
+		printSummary(&monitorSummary);
 
-	return monitorInfo.exit_status;
+	return monitorSummary.exitStatus;
 }
 
 /* Function: monitorProcess */
-void monitorProcess(FILE *outFile, char **argv, int waitTime, proc_monitor_t *monitorInfo, int cpuSet) {
+void monitorProcess(FILE *outFile, char **argv, int waitTime, ProcMonitorSummary *monitorSummary, int cpuSet) {
 
 	/* Declarations. */
 
 	struct timespec currentTime;  /* Timespec struct for getting the current time. */
-	long startMs;                 /* Clock time: milliseconds at start. */
+	long startTime;               /* Clock time: milliseconds at start. */
 	long ms;                      /* Elapsed time: milliseconds. */
 
-	int childPid;  /* Monitored PID. */
+	int childPid;    /* Monitored PID. */
 	int exitStatus;  /* Monitored PID exit status. */
 
-	trace_rss_t traceArgs;
+	TraceArguments traceArgs;  /* Arguments for the trace function and write-back data from the trace function. */
 
-	pthread_t traceThread;
+	pthread_t traceThread;  /* Thread running the trace */
 
-	cpu_set_t cpuMask;
+	cpu_set_t cpuMask;  /* Mask describing the CPUs the process should run on. */
 
-	int index;
+	MonitorThreadStatus *monitorExitStatus;
 
 	/* Fork child process. */
 	childPid = fork();
@@ -207,7 +228,7 @@ void monitorProcess(FILE *outFile, char **argv, int waitTime, proc_monitor_t *mo
 
 			CPU_ZERO(&cpuMask);
 
-			for (index = 0; index < sizeof(unsigned int) * 8; ++index) {
+			for (int index = 0; index < sizeof(unsigned int) * 8; ++index) {
 				if ((cpuSet & 0x01 << index) != 0)
 					CPU_SET(index, &cpuMask);
 			}
@@ -226,21 +247,19 @@ void monitorProcess(FILE *outFile, char **argv, int waitTime, proc_monitor_t *mo
 	/* Get start time. */
 	clock_gettime(CLOCK_MONOTONIC, &currentTime);
 
-	startMs = currentTime.tv_sec * 1000 + currentTime.tv_nsec / 1000000;
+	startTime = currentTime.tv_sec * 1000 + currentTime.tv_nsec / 1000000;
 
 	/* Set traceArgs. */
 	traceArgs.pid = childPid;
-	traceArgs.out_file = outFile;
-	traceArgs.start_ms = startMs;
-	traceArgs.wait_time = waitTime;
+	traceArgs.outFile = outFile;
+	traceArgs.startTime = startTime;
+	traceArgs.waitTime = waitTime;
 	traceArgs.active = 1;
-	traceArgs.max_rss = 0;
+	traceArgs.maxRss = 0;
 
 	/* Start trace process. */
-	errno = pthread_create(&traceThread, NULL, &traceRss, &traceArgs);
-
-	if (errno != 0)
-		errnoErr("Error creating trace thread", ERR_THREAD);
+	if (pthread_create(&traceThread, NULL, &traceProcess, &traceArgs) != 0)
+		err("Error creating trace thread", ERR_THREAD);
 
 	/* Wait for process to stop. */
 	waitpid(childPid, &exitStatus, 0);
@@ -252,175 +271,258 @@ void monitorProcess(FILE *outFile, char **argv, int waitTime, proc_monitor_t *mo
 	/* Wait for trace process to stop. */
 	traceArgs.active = 0;
 
-	pthread_join(traceThread, NULL);
+	pthread_join(traceThread, (void **) &monitorExitStatus);
+
+	if (! monitorExitStatus->returnValue) {
+		fprintf(outFile, "# Monitor process failed: %s (%s)\n", monitorExitStatus->msg, strerror(monitorExitStatus->err));
+	}
+
+	free(monitorExitStatus);
 
 	/* Set monitor info. */
-	if (monitorInfo != NULL) {
-		monitorInfo->max_rss = traceArgs.max_rss;
-		monitorInfo->run_time = ms - startMs;
-		monitorInfo->exit_status = WEXITSTATUS(exitStatus);
+	if (monitorSummary != NULL) {
+		monitorSummary->maxRss = traceArgs.maxRss;
+		monitorSummary->runTime = ms - startTime;
+		monitorSummary->exitStatus = WEXITSTATUS(exitStatus);
 	}
 
 	return;
 }
 
-/* Function: traceVss */
-void *traceRss(void *traceRssArgs) {
+/* Function: traceProcess */
+void *traceProcess(void *traceArgsVoidPtr) {
 
 	/* Declarations. */
-	int count;  /* Number of iterations. */
-	long ms;     /* Elapsed time (milliseconds). */
+	long count;  /* Number of iterations. */
 
+	long ms;                      /* Elapsed time (milliseconds). */
 	struct timespec currentTime;  /* Timespec struct for getting the current time. */
 
-	long rss;     /* Resident size (kB) of the process in one cycle. */
-	long maxRss;  /* Max RSS. */
+	long sleepMs;                 /* Time to sleep (ms) between querying process usage */
+	struct timespec sleepTime;    /* Timespec struct argument nanosleep() */
 
-	trace_rss_t *traceArgs;
+	pid_t pid;  /* Process ID monitored. */
+
+	TraceArguments *traceArgs;  /* Trace arguments. */
+
+	ProcSnapshot procSnapshot;  /* Snapshot of the process at one point in time. */
+
+	PidQueue *pidQueue;  /* Queue of PIDs (reused by getResidentSize()). */
+	PidHash *pidHash;    /* Hash of PIDs organized by parent process (reused by getResidentSize()). */
+
+	MonitorThreadStatus *exitStatus;
 
 	/* Check arguments. */
-	if (traceRssArgs == NULL) {
+	if (traceArgsVoidPtr == NULL) {
 		pthread_exit(NULL);
 	}
 
-	traceArgs = (trace_rss_t *) traceRssArgs;
+	/* Init */
+	errno = 0;
+
+	exitStatus = malloc(sizeof(MonitorThreadStatus));
+	exitStatus->returnValue = 0;
+	exitStatus->err = 0;
+	exitStatus->msg = NULL;
+
+	pidQueue = newPidQueue();
+	pidHash = newPidHash(HASH_ARRAY_SIZE, NAME_BUF_SIZE, STAT_BUF_SIZE);
+	traceArgs = (TraceArguments *) traceArgsVoidPtr;
+
+	if (pidQueue == NULL || pidHash == NULL) {
+		exitStatus->returnValue = 0;
+		exitStatus->err = errno;
+
+		if (pidQueue == NULL)
+			exitStatus->msg = "Failed allocating PID queue";
+		else
+			exitStatus->msg = "Failed allocating PID hash";
+
+		pthread_exit(exitStatus);
+	}
+
+	pid = traceArgs->pid;
 
 	/* Monitor (init). */
-	ms = traceArgs->start_ms;
+	ms = traceArgs->startTime;
 
-	maxRss = 0;
 	count = 0;
 
-	clock_gettime(CLOCK_MONOTONIC, &currentTime);
-	rss = getResidentSize(traceArgs->pid);
-
 	/* Monitor VSS until the child process dies. */
-	while (rss >= 0 && traceArgs->active) {
-
-		/* Set max. */
-		if (rss > maxRss)
-			maxRss = rss;
-
-		/* Parse time-stamp. */
-		ms = currentTime.tv_sec * 1000 + currentTime.tv_nsec / 1000000 - traceArgs->start_ms;
-
-		/* Write. */
-		if (traceArgs->out_file != NULL) {
-			fprintf(traceArgs->out_file, "%d\t%ld.%ld\t%ld\n", ++count, ms / 1000, ms % 1000, rss);
-			fflush(traceArgs->out_file);
-		}
-
-		/* Pause between cycles. */
-		sleep(traceArgs->wait_time);
+	while (traceArgs->active) {
 
 		clock_gettime(CLOCK_MONOTONIC, &currentTime);
 
-		rss = getResidentSize(traceArgs->pid);
+		/* Get process stats */
+		if (! getSnapshot(pid, &procSnapshot, pidQueue, pidHash)) {
+			exitStatus->returnValue = 0;
+			exitStatus->err = errno;
+			exitStatus->msg = "Failed getting process snapshot";
+
+			pthread_exit(exitStatus);
+		}
+
+		/* Set max. */
+		if (procSnapshot.rss > traceArgs->maxRss)
+			traceArgs->maxRss = procSnapshot.rss;
+
+		/* Parse time-stamp. */
+		ms = currentTime.tv_sec * 1000 + currentTime.tv_nsec / 1000000 - traceArgs->startTime;
+
+		/* Write. */
+		if (traceArgs->outFile != NULL) {
+			fprintf(traceArgs->outFile, "%d\t%ld.%ld\t%ld\t%ld\t%d\n",
+					++count,
+					ms / 1000, ms % 1000,
+					procSnapshot.rss * pageSize / 1024,
+					procSnapshot.vsize / 1024,
+					procSnapshot.nproc
+			);
+
+			fflush(traceArgs->outFile);
+		}
+
+		/* Sleep to next round. */
+		sleepMs = count * traceArgs->waitTime * 1000 - ms;
+
+		if (sleepMs > 10) {
+
+			sleepTime.tv_sec = sleepMs / 1000;
+			sleepTime.tv_nsec = sleepMs % 1000 * 1000000;
+
+			/* Pause between cycles. */
+			nanosleep(&sleepTime, NULL);
+		}
 	}
 
-	traceArgs->max_rss = maxRss;
+	/* Free resources. */
+	freePidQueue(pidQueue);
+	freePidHash(pidHash);
 
 	/* Exit. */
-	pthread_exit(NULL);
+	exitStatus->returnValue = 1;
+
+	pthread_exit(exitStatus);
 }
 
 /* Function: getResidentSize
  *
  * Get the estimated resident size of the process in memory in kB.
  */
-long getResidentSize(int pid) {
+int getSnapshot(pid_t pid, ProcSnapshot *procSnapshot, PidQueue *pidQueue, PidHash *pidHash) {
 
 	/* Declarations. */
-	long residentSize;  /* VSS size to be returned. */
+	DIR *procDir;               /* Structure for reading /proc */
+	struct dirent *procDirEnt;  /* Entry in /proc */
 
-	FILE *statFile;  /* Status file (/proc/PID/stat) for the child process. */
+	pid_t pidEntry;  /* Numeric pid in /proc or in the pid queue */
 
-	const int STAT_FILE_SIZE = 128;
-	char statFileName[STAT_FILE_SIZE];
+	PidNode *pidNode;  /* Resources of pid */
 
-	const int RET_NO_PID = -1;     /* Return value if the process PID is not alive. */
-	const int RET_ERR_ARG = -2;    /* Return value for bad arguments. */
-	const int RET_ERR_PARSE = -3;  /* Return value if there is an error parsing stat. */
+	int hashIndex;  /* Index of pidHash where a process is found. */
 
-	char *vssStart;  /* Points to buffer where the VSS field starts. */
+	/* Init */
+	clearPidQueue(pidQueue);
+	clearPidHash(pidHash);
 
-	int nRead;  /* Number of bytes read. */
+	procSnapshot->rss = 0;
+	procSnapshot->vsize = 0;
+	procSnapshot->nproc = 0;
 
-	int offset;
+	errno = 0;
 
-	size_t bufferSize =  STAT_BUFFER_SIZE;
-	char *buffer = malloc(sizeof(char) * bufferSize);
+	/* Open /proc */
+	procDir = opendir("/proc");
 
-	char *sizeStr;
+	if (procDir == NULL)
+		return 0;  // errno set
 
-	/* Check arguments. */
-	if (pid <= 0) {
-		return RET_ERR_ARG;
+	/* Read /proc and build pid hash. */
+	procDirEnt = readdir(procDir);
+
+	while (procDirEnt != NULL) {
+		if (isPidDir(procDirEnt->d_name)) {
+
+			/* Add to hash */
+			if (addPidHash(pidHash, atoi(procDirEnt->d_name)) <= -2) {
+
+				// Do not fail if the process is no longer in /proc (died since directory listing)
+				if (errno != ENOENT)
+					return 0;
+
+				errno = 0;
+			}
+		}
+
+		/* Read next dir entry in /proc */
+		procDirEnt = readdir(procDir);
 	}
 
-	/* Open stat. */
-	snprintf(statFileName, STAT_FILE_SIZE, "/proc/%d/status", pid);
+	closedir(procDir);
 
-	statFile = fopen(statFileName, "r");
+	/* Check exit status. */
+	if (errno != 0)
+		return 0;
 
-	if (statFile == NULL) {
+	/* Get resources for pid. */
+	pidNode = getPidNode(pidHash, pid);
 
-		free(buffer);
+	if (pidNode != NULL) {
+		procSnapshot->rss = pidNode->rss;
+		procSnapshot->vsize = pidNode->vsize;
+		procSnapshot->nproc = 1;
 
-		return RET_NO_PID;
+	} else {
+		/* No process, exit with 0 counts */
+		return 1;
 	}
 
-	/* Get VmRSS line.
-	 *
-	 * Line format:
-	 * VmRSS:      xxxxx kB */
-	residentSize = 0;
+	free(pidNode);
 
-	while (1) {
+	/* Add child resources for all pids. */
+	appendPidQueue(pidQueue, pid);
 
-		/* Read line. */
-		nRead = getline(&buffer, &bufferSize, statFile);
+	while ((pidEntry = takePidQueue(pidQueue)) >= 0) {
+		hashIndex = getPidHashIndex(pidHash, pidEntry);
 
-		/* If no more bytes and VmRSS was not found, finish. */
-		if (nRead < 0)
-			break;
+		if (hashIndex >= 0) {
+			pidNode = pidHash->hashArray[hashIndex].child;
 
-		/* sizeStr will point to the later half (after "VmRSS:") of the line. */
-		sizeStr = buffer;
+			while (pidNode != NULL) {
+				appendPidQueue(pidQueue, pidNode->pid);
 
-		/* Split at : */
-		while (*sizeStr != ':' && sizeStr != '\0')
-			++sizeStr;
+				procSnapshot->rss += pidNode->rss;
+				procSnapshot->vsize += pidNode->vsize;
+				procSnapshot->nproc += 1;
 
-		if (sizeStr == '\0')
-			continue;
-
-		*sizeStr = '\0';
-
-		/* Compare first half to VmRSS. */
-		if (strcmp(buffer, "VmRSS") == 0) {
-
-			/* Found the line. sizeStr points to the later
-			 * half, use sscanf to convert to a long int. */
-
-			++sizeStr;
-
-			sscanf(sizeStr, "%ld", &residentSize);
-
-			break;
+				pidNode = pidNode->next;
+			}
 		}
 	}
 
-	/* Close and free resources. */
-	fclose(statFile);
+	return 1;
+}
 
-	free(buffer);
+/*
+ * Determine if a directory name in /proc belongs to a pid. A pid directory must contain only
+ * numbers.
+ */
+int isPidDir(const char *charPtr) {
 
-	return residentSize;
+	if (*charPtr == '\0')
+		return 0;
+
+	while (*charPtr != '\0' && isdigit(*charPtr))
+		++charPtr;
+
+	if (*charPtr != '\0')
+		return 0;
+
+	return 1;
 }
 
 /* Function: printSummary */
-void printSummary(proc_monitor_t *monitorInfo) {
+void printSummary(ProcMonitorSummary *monitorSummary) {
 
 	const char *suffixes[] = {"kB", "MB", "GB", "TB", "EB"};
 	const int suffix_size = 5;
@@ -431,15 +533,15 @@ void printSummary(proc_monitor_t *monitorInfo) {
 	int s;
 	int ms;
 
-	if (monitorInfo == NULL)
+	if (monitorSummary == NULL)
 		return;
 
 	/* Get time. */
-	s = monitorInfo->run_time / 1000;
-	ms = monitorInfo->run_time % 1000;
+	s = monitorSummary->runTime / 1000;
+	ms = monitorSummary->runTime % 1000;
 
 	/* Format VSS. */
-	vssSize = monitorInfo->max_rss;
+	vssSize = monitorSummary->maxRss;
 
 	while (vssSize > 1024.0 && suffixIndex < suffix_size) {
 		vssSize /= 1024.0;
@@ -447,9 +549,9 @@ void printSummary(proc_monitor_t *monitorInfo) {
 	}
 
 	printf("\nRun time: %d.%d (%d:%d:%d.%d)\n", s, ms, s / 3600, (s % 3600) / 60, s % 60, ms);
-	printf("Max RSS: %ld kB (%0.2f%s)\n", monitorInfo->max_rss, vssSize, suffixes[suffixIndex]);
+	printf("Max RSS: %ld kB (%0.2f%s)\n", monitorSummary->maxRss, vssSize, suffixes[suffixIndex]);
 
-	printf("Process exited with code %d\n", monitorInfo->exit_status);
+	printf("Process exited with code %d\n", monitorSummary->exitStatus);
 
 	return;
 }

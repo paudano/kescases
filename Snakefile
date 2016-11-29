@@ -3,8 +3,12 @@ Run Kestrel test cases.
 """
 
 import os
+import sys
 
 from kescaseslib import bedreader
+
+# Update sys.path
+sys.path.append('build/pysam')
 
 
 ##################
@@ -25,6 +29,14 @@ if 'HOME' in ENV:
 else:
     HOME_DIR = None
 
+# Tools
+class ToolClass:
+    pass
+
+tools = ToolClass()
+
+for tool_name in config['tools']:
+    setattr(tools, tool_name, config['tools'][tool_name])
 
 ### Persistent Data: Strep ###
 
@@ -37,7 +49,7 @@ STREP_REGIONS = bedreader.bed_interval_to_dataframe(config['strep']['pbp_bed'])
 #############
 
 ### Strep ###
-include: 'rules/strep/data.snakefile'
-include: 'rules/strep/varcall/assembly.snakefile'
-include: 'rules/strep/varcall/gatk.snakefile'
-include: 'rules/strep/varcall/kestrel.snakefile'
+include: 'rules/strep/strep.snakefile'
+
+### All (rules shared over multiple experiments) ###
+include: 'rules/all/variant.snakemake'
