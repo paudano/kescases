@@ -3,7 +3,7 @@ BUILD_DIR=bwa-$(VERSION)
 INSTALL_TARGET=../../bin/bwa
 INSTALL_SOURCE=../build/bwa/$(BUILD_DIR)/bwa
 DL_FILE=bwa-$(VERSION).tar.bz2
-DL_URL=wget http://downloads.sourceforge.net/project/bio-bwa/$(DL_FILE)
+DL_URL=http://downloads.sourceforge.net/project/bio-bwa/$(DL_FILE)
 
 $(INSTALL_TARGET): $(INSTALL_SOURCE)
 	ln -sf $< $@

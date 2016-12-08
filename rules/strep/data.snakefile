@@ -66,7 +66,10 @@ rule strep_reference_index_picard:
     output:
         index=STREP_PICARD_INDEX
     shell:
-        """java -jar lib/picard.jar CreateSequenceDictionary R={input.ref} O={output.index}"""
+        """java -jar {tools.picard} """
+            """CreateSequenceDictionary """
+            """R={input.ref} """
+            """O={output.index}"""
 
 # strep_reference_index_bwa
 #
@@ -77,7 +80,7 @@ rule strep_reference_index_bwa:
     output:
         index_files=STREP_BWA_INDEX_LIST
     shell:
-        """bwa index {input.ref}"""
+        """bin/bwa index {input.ref}"""
 
 # strep_reference_index_samtools
 #
@@ -88,7 +91,7 @@ rule strep_reference_index_samtools:
     output:
         fai=STREP_REF_FAI
     shell:
-        """samtools faidx {input.ref}"""
+        """bin/samtools faidx {input.ref}"""
 
 # strep_cp_reference
 #
@@ -118,7 +121,7 @@ rule strep_get_sample_fastq:
     run:
         # Download
         out_dir = os.path.dirname(output.fastq_1)
-        shell("""fastq-dump --split-files --gzip {input.sra} --outdir {out_dir} >{log} 2>&1""")
+        shell("""bin/fastq-dump --split-files --gzip {input.sra} --outdir {out_dir} >{log} 2>&1""")
 
 # strep_get_sample_sra
 #

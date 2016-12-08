@@ -7,7 +7,6 @@ Rules for calling variants with Kestrel.
 #############
 
 
-
 # strep_kestrel_call
 #
 # Call variants from the IKC file.
@@ -24,18 +23,17 @@ rule strep_kestrel_call:
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """java -Xmx2G """
-        """-jar {tools.kestrel} """
-        """-r {STREP_REF} """
-        """-m vcf """
-        """--noanchorboth """
-        """--varfilter="coverage:0.5,5" """
-        """--scanlimitfactor=max """
-        """-i {input.interval} """
-        """--loglevel=all --logfile={log} """
-        """-o {output.vcf} """
-        """-s{wildcards.accession} """
-        """{input.ikc}"""
+        """java -Xmx2G -jar {tools.kestrel} """
+            """-r {STREP_REF} """
+            """-m vcf """
+            """--noanchorboth """
+            """--varfilter="coverage:0.5,5" """
+            """--scanlimitfactor=max """
+            """-i {input.interval} """
+            """--loglevel=all --logfile={log} """
+            """-o {output.vcf} """
+            """-s{wildcards.accession} """
+            """{input.ikc}"""
 
 # strep_kestrel_make_ikc
 #
@@ -54,14 +52,13 @@ rule strep_kestrel_make_ikc:
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """java -Xmx3G """
-        """-jar {tools.kanalyze} """
-        """count """
-        """-k 31 """
-        """--countfilter=kmercount:5 """
-        """--quality=10 """
-        """-m ikc """
-        """--minsize 15 """
-        """-o {output.ikc} """
-        """{input.fq_1} {input.fq_2} """
-        """> {log}"""
+        """java -Xmx3G -jar {tools.kanalyze} """
+            """count """
+            """-k 31 """
+            """--countfilter=kmercount:5 """
+            """--quality=10 """
+            """-m ikc """
+            """--minsize 15 """
+            """-o {output.ikc} """
+            """{input.fq_1} {input.fq_2} """
+            """> {log}"""

@@ -89,7 +89,7 @@ def read_pileup_variants(pileup_file_name, sample_name, interval_container, no_c
                         # Add no-call regions
                         if nc_start > 0:
                             no_call.add_interval(current_interval.chr, None,
-                                                               nc_start, current_interval.stop)
+                                                 nc_start, current_interval.stop)
 
                         # Reset
                         ref_sequence = ''

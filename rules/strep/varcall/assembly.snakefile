@@ -22,8 +22,8 @@ rule strep_asm_plot_tp_assembly:
         eps='local/strep/figures/sample/{accession}/assemble/assemble_rss.eps',
         pdf='local/strep/figures/sample/{accession}/assemble/assemble_rss.pdf'
     shell:
-        """Rscript scripts/strep/plots/assembly_trace_plot.R {input.tp} {output.eps}; """
-        """Rscript scripts/strep/plots/assembly_trace_plot.R {input.tp} {output.pdf}"""
+        """bin/Rscript scripts/strep/plots/assembly_trace_plot.R {input.tp} {output.eps}; """
+        """bin/Rscript scripts/strep/plots/assembly_trace_plot.R {input.tp} {output.pdf}"""
 
 
 ### Run Pipeline ###
@@ -59,11 +59,11 @@ rule strep_asm_pileup:
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """samtools mpileup """
-        """-f {STREP_REF} """
-        """-l {input.interval} """
-        """{input.bam} """
-        """-o {output.pileup}"""
+        """bin/samtools mpileup """
+            """-f {STREP_REF} """
+            """-l {input.interval} """
+            """{input.bam} """
+            """-o {output.pileup}"""
 
 # strep_asm_bam_index
 #
@@ -96,11 +96,11 @@ rule strep_asm_sort_sam:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
         """java -jar {tools.picard} """
-        """SortSam """
-        """I={input.sam} """
-        """O={output.bam} """
-        """SO=coordinate CREATE_INDEX=true """
-        """2>{log}"""
+            """SortSam """
+            """I={input.sam} """
+            """O={output.bam} """
+            """SO=coordinate CREATE_INDEX=true """
+            """2>{log}"""
 
 # strep_asm_align
 #
@@ -120,13 +120,13 @@ rule strep_asm_align:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
         """bin/bwa mem """
-        """-B 1 """
-        """-L 1000,1000 """
-        """-R "@RG\\tID:Strep{wildcards.accession}\\tSM:{wildcards.accession}" """
-        """{STREP_REF} """
-        """{input.scaffolds} """
-        """> {output.sam} """
-        """2>{log}"""
+            """-B 1 """
+            """-L 1000,1000 """
+            """-R "@RG\\tID:Strep{wildcards.accession}\\tSM:{wildcards.accession}" """
+            """{STREP_REF} """
+            """{input.scaffolds} """
+            """> {output.sam} """
+            """2>{log}"""
 
 # strep_asm_assemble
 #
@@ -146,6 +146,6 @@ rule strep_asm_assemble:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
         """bin/spades.py """
-        """-1 {input.fq_1} -2 {input.fq_2} """
-        """-o $(dirname {output.scaffolds}) """
-        """> {log}"""
+            """-1 {input.fq_1} -2 {input.fq_2} """
+            """-o $(dirname {output.scaffolds}) """
+            """> {log}"""

@@ -134,7 +134,7 @@ rule strep_variant_vcf_eval_to_table:
             """zcat {input.vcf} | """
             """fgrep -v '##INFO' | """
             """awk -v OFS="\t" '{{$8 = "."; print}}' | """
-            """vcf2tsv -g | """
+            """bin/vcf2tsv -g | """
             """awk -vOFS="\t" -vCALLTYPE={call_type} '(NR == 1) {{$(NF + 1) = "CALL"; print}} (NR > 1) {{$(NF + 1) = CALLTYPE; print}}' """
 #            """xargs -I LINE echo -e "LINE\t{call_type}" """
             """> {output.tab}"""

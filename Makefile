@@ -1,7 +1,27 @@
-ALL_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg
+ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/R bin/Rscript bin/fastq-dump
+
+ALL_NONFREE_TARGETS=lib/GenomeAnalysisTK.jar lib/picard.jar
 
 .PHONY: all
-all: $(ALL_TARGETS)
+all: $(ALL_NONFREE_TARGETS) $(ALL_FREE_TARGETS)
+
+.PHONY: allfree
+allfree: $(ALL_FREE_TARGETS)
+
+lib/GenomeAnalysisTK.jar lib/picard.jar:
+	@ if [ ! -a $@ ]; then \
+		echo "* $@ is not installed and must be manually downloaded." ; \
+		echo "* See lib/NOTES for installation instructions." ; \
+		echo "* To build all freely-available software, run \"make allfree\"" ; \
+		exit 1 ; \
+	fi ; \
+	echo OK
+
+bin/fastq-dump:
+	make -C build/sra
+
+bin/R bin/Rscript:
+	make -C build/r
 
 bin/rtg:
 	make -C build/rtg

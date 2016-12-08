@@ -22,7 +22,7 @@ rule strep_gatk_get_alignment_pileup:
     log:
         'local/strep/results/{accession}/gatk/log/strep_gatk_samtools_index_bam.log'
     shell:
-        """samtools mpileup """
+        """bin/samtools mpileup """
             """-f {STREP_REF} """
             """-l {input.interval} """
             """--max-depth 750 """
@@ -41,7 +41,7 @@ rule strep_gatk_samtools_index_bam:
     log:
         'local/strep/results/{accession}/gatk/log/strep_gatk_samtools_index_bam.log'
     shell:
-        """samtools index {input} >{log} 2>&1"""
+        """bin/samtools index {input} >{log} 2>&1"""
 
 
 ### GATK Pipeline ###
@@ -62,7 +62,8 @@ rule strep_gatk_call_variants:
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """java -jar {tools.gatk} -T HaplotypeCaller """
+        """java -jar {tools.gatk} """
+            """-T HaplotypeCaller """
             """-L {input.interval} """
             """-R {STREP_REF} """
             """-I {input.bam} """
@@ -88,7 +89,8 @@ rule strep_gatk_indel_realign:
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """java -jar {tools.gatk} -T IndelRealigner """
+        """java -jar {tools.gatk} """
+            """-T IndelRealigner """
             """-R {input.ref} """
             """-targetIntervals {input.intervals} """
             """-I {input.bam} """
@@ -113,30 +115,11 @@ rule strep_gatk_realign_target_creator:
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """java -jar {tools.gatk} -T RealignerTargetCreator """
+        """java -jar {tools.gatk} """
+            """-T RealignerTargetCreator """
             """-R {input.ref} """
             """-I {input.bam} -o {output.intervals} """
             """>{log} 2>&1"""
-
-## strep_gatk_sort_marked
-##
-## Create a sorted BAM from the aligned reads.
-#rule strep_gatk_sort_marked:
-#    input:
-#        bam='local/temp/strep/{accession}/gatk/sample_prerealign.bam'
-#    output:
-#        bam='local/strep/results/{accession}/gatk/sample.init.bam',
-#        time='local/strep/results/{accession}/gatk/bm/sort_marked.time',
-#        trace='local/strep/results/{accession}/gatk/bm/sort_marked.trace'
-#    log:
-#        'local/strep/results/{accession}/gatk/log/strep_gatk_sort_marked.log'
-#    shell:
-#        """bin/time -p -o {output.time} """
-#        """bin/traceproc -o {output.trace} """
-#        """java -jar {tools.picard} SortSam """
-#            """I={input.bam} O={output.bam} """
-#            """SO=coordinate CREATE_INDEX=true """
-#            """> {log} 2>&1"""
 
 rule strep_gatk_index_marked_bam:
     input:
@@ -150,7 +133,8 @@ rule strep_gatk_index_marked_bam:
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """java -jar {tools.picard} BuildBamIndex """
+        """java -jar {tools.picard} """
+            """BuildBamIndex """
             """I={input.bam} """
             """O={output.bai} """
             """>{log} 2>&1"""
@@ -172,7 +156,8 @@ rule strep_gatk_mark_duplicates:
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """java -jar {tools.picard} MarkDuplicatesWithMateCigar """
+        """java -jar {tools.picard} """
+            """MarkDuplicatesWithMateCigar """
             """MINIMUM_DISTANCE=500 """
             """INPUT={input.bam} OUTPUT={output.bam} """
             """METRICS_FILE={output.metrics} """
@@ -216,6 +201,6 @@ rule strep_gatk_align:
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """bwa mem -R "@RG\\tID:Strep{wildcards.accession}\\tSM:{wildcards.accession}" {input.ref} """
+        """bin/bwa mem -R "@RG\\tID:Strep{wildcards.accession}\\tSM:{wildcards.accession}" {input.ref} """
             """{input.fq_1} {input.fq_2} """
             """>{output.sam} 2>{log}"""
