@@ -3,4 +3,6 @@
 !Makefile
 !src
 !src/*
+!include
+!include/*
 
