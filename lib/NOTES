@@ -6,6 +6,7 @@ picard.jar
 
 GATK may be downloaded from:
 https://www.broadinstitute.org/gatk/download/
+* Note: After logging into the Broad Institute site, copy and paste this link. Going directly to the link and then logging in will result in an error stating that the file does not exist. If you get that error after logging in, just navigate to the link (above) again.
 
 Picard may be downloaded from:
 http://broadinstitute.github.io/picard/
