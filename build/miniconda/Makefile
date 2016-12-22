@@ -20,9 +20,11 @@ kescases_pkg_flag: envs/kescases/bin/python3.5
 
 envs/kescases/bin/python3.5: bin/conda
 	bin/conda create --yes --name kescases python=3.5.2
+	touch envs/kescases/bin/python3.5
 
 bin/conda: $(notdir $(INSTALLER_URL))
 	bash $< -f -b -p `pwd`
+	touch bin/conda
 
 $(notdir $(INSTALLER_URL)):
 	wget $(INSTALLER_URL)

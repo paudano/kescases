@@ -10,7 +10,7 @@ DL_URL=https://cran.r-project.org/src/base/R-3/R-$(VERSION).tar.gz
 all: $(INSTALL_TARGET)
 
 # Install
-$(INSTALL_TARGET): $(BUILD_DIR)/$$(notdir $@) lib64/R/library/ggplot2/R/ggplot2
+$(INSTALL_TARGET): bin/$$(notdir $$@) lib64/R/library/ggplot2/R/ggplot2
 	ln -sf ../build/r/bin/$(notdir $@) $@
 
 # Install packages: ggplot2
@@ -22,7 +22,7 @@ lib64/R/etc/Rprofile.site: bin/R
 	echo ".libPaths('$(realpath lib64/R/library)')" > $@
 
 # Install to this directory
-bin/R bin/Rscript: $(BUILD_DIR)/bin/$$(notdir $@)
+bin/R bin/Rscript: $(BUILD_DIR)/bin/$$(notdir $$@)
 	cd $(BUILD_DIR); make install
 
 # Build
