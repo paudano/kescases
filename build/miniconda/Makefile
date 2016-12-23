@@ -8,7 +8,7 @@ INSTALL_TARGET_ENV2_PREFIX=../build/miniconda/envs/kespy2/bin
 ALL_PKGS=$(addprefix envs/kescases/lib/python3.5/site-packages/,pysam pandas numpy) $(addprefix envs/kescases/bin/,snakemake)
 
 .PHONY: all
-all: kescases_pkg_flag
+all: $(INSTALL_TARGET_DIR)/python $(INSTALL_TARGET_DIR)/python2 $(INSTALL_TARGET_DIR)/snakemake
 
 
 $(INSTALL_TARGET_DIR)/python: kescases_pkg_flag

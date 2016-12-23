@@ -35,7 +35,7 @@ rule mlst_kesmlst_run_mlst:
     input:
         ikc='local/mlst/results/{accession}/kesmlst/kmertable.ikc'
     output:
-        tab='local/mlst/results/{accession}/kesmlst/mlst.tab',
+        tab='local/mlst/results/{accession}/kesmlst/mlst_calls.tab',
         time='local/mlst/results/{accession}/kesmlst/bm/kesmlst.time',
         trace='local/mlst/results/{accession}/kesmlst/bm/kesmlst.trace'
     log:
