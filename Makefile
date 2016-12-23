@@ -1,4 +1,4 @@
-ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/R bin/Rscript bin/fastq-dump bin/blastn bin/quast.py
+ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/R bin/Rscript bin/fastq-dump bin/blastn bin/quast.py bin/python2
 
 ALL_NONFREE_TARGETS=lib/GenomeAnalysisTK.jar lib/picard.jar
 
@@ -35,7 +35,7 @@ bin/rtg:
 bin/tabix:
 	make -C build/tabix
 
-bin/python:
+bin/python bin/python2:
 	make -C build/miniconda ../../bin/python
 
 bin/snakemake:
