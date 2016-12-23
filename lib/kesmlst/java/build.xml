@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+	Copyright (c) 2015 Peter A. Audano III
+
+	This program is free software; you can redistribute it and/or modify
+	it under the terms of the GNU Lesser General Public License as published
+	by the Free Software Foundation; either version 3 of the License or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU Library General Public License for more details.
+
+	You should have received a copy of the GNU Lesser General Public License
+	along with this program; see the file COPYING.LESSER.  If not, see
+	<http://www.gnu.org/licenses/>
+-->
+
+<project name="Kestrel MLST"
+	default="package"
+	basedir=".">
+	
+	<description>Builds the Kestrel MLST POC</description>
+	
+
+	<!--
+ 		Load local properties. These take precedence over properties set in the build script.
+ 		The repository MUST ignore this file.
+	-->
+	
+ 	<property file=".localbuildprops"/>
+	
+ 	
+ 	<!--
+		Set properties
+ 	-->
+ 	
+	<property name="dir.root" location="."/>
+	
+	<property name="dir.build" location="${dir.root}/build"/>
+	<property name="dir.build.classes" location="${dir.build}/classes"/>
+	
+	<property name="dir.lib" location="${dir.root}/../../../kestrel"/>
+	<property name="dir.onejar" location="${dir.root}/../../../lib/onejar"/>
+	
+	<property name="dir.src" location="${dir.root}/src"/>
+	
+	<!-- Locations of libraries at compile time -->
+	<property name="lib.kestrel" value="${dir.lib}/kestrel.jar"/>
+	<property name="lib.kanalyze" value="${dir.lib}/kanalyze.jar"/>
+	<property name="lib.getopt" value="${dir.lib}/java-getopt-1.0.14.jar"/>
+	<property name="lib.slf4j" value="${dir.lib}/slf4j-api-1.7.12.jar"/>
+	<property name="lib.logback" value="${dir.lib}/logback-core-1.1.3.jar"/>
+	
+	<property name="build.classpath" value="${dir.build.classes}:${lib.kestrel}:${lib.kanalyze}:${lib.getopt}:${lib.slf4j}:${lib.logback}"/>
+
+	<property name="build.java.bootclasspath" location="/usr/lib/jvm/java-1.7.0/jre/lib/rt.jar"/>
+	<property name="build.java.version.source" value="1.8"/>
+	<property name="build.java.version.target" value="${build.java.version.source}"/>
+	
+	<!-- Locations of libraries at run time -->
+	<property name="dir.run.lib" value="../../kestrel"/>
+	<property name="lib.run.kestrel" value="${dir.run.lib}/kestrel.jar"/>
+	<property name="lib.run.kanalyze" value="${dir.run.lib}/kanalyze.jar"/>
+	<property name="lib.run.getopt" value="${dir.run.lib}/java-getopt-1.0.14.jar"/>
+	<property name="lib.run.slf4j" value="${dir.run.lib}/slf4j-api-1.7.12.jar"/>
+	<property name="lib.run.logback" value="${dir.run.lib}/logback-core-1.1.3.jar"/>
+	
+	<!--
+		Target: init
+	 -->
+	
+	<target name="init"
+		description="Initialize the repository for building">
+			
+		<mkdir dir="${dir.build}"/>
+		<mkdir dir="${dir.build.classes}"/>
+	</target>
+	
+	
+	<!-- 
+		Target: clean
+	 -->
+	
+	<target name="clean"
+				description="Clean compiled, packaged, and temp resources">
+		
+		<delete dir="${dir.build}"/>
+	</target>
+
+
+	<!--
+		Target: Compile
+	 -->
+	 
+	 <target name="compile"
+ 		description="Compile sources"
+ 		depends="init">
+ 		
+ 		<javac
+			destdir="${dir.build.classes}"
+			classpath="${build.classpath}"
+			srcdir="${dir.src}"
+			source="${build.java.version.source}"
+			target="${build.java.version.target}"
+ 			bootclasspath="${build.java.bootclasspath}"
+ 			debug="true"
+			includeantruntime="false">
+		
+			<include name="**/*.java"/>
+		</javac>
+ 		
+	</target>
+
+	
+	<!--
+		Target: Package
+	-->
+	
+	<target name="package"
+		description="Package JAR file"
+		depends="compile">
+		
+		<jar destfile="${dir.build}/kestrelmlst.jar">
+			
+			<fileset dir="${dir.build.classes}"/>
+			
+			<manifest>
+				<attribute name="Main-Class" value="edu.gatech.kesmlst.KesMLST"/>
+				<attribute name="Class-Path" value="${lib.run.kestrel} ${lib.run.kanalyze} ${lib.run.getopt} ${lib.run.slf4j} ${lib.run.logback}"/>
+			</manifest>
+			
+		</jar>
+		
+	</target>
+	
+</project>

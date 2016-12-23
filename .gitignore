@@ -7,6 +7,8 @@ bin
 lib/*
 !lib/NOTES
 !lib/kestrel
+!lib/kesmlst
+lib/kesmlst/java/build
 
 # Caches and editor tempfiles
 **/__pycache__

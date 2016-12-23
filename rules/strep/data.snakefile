@@ -103,39 +103,3 @@ rule strep_cp_reference:
         ref=STREP_REF
     shell:
         """cp -f {input.ref} {output.ref}"""
-
-
-### Samples ###
-
-# strep_get_sample
-#
-# Dump paired-end FASTQ files from SRA file.
-rule strep_get_sample_fastq:
-    input:
-        sra='local/strep/temp/samples/{accession}.sra'
-    output:
-        fastq_1='local/strep/samples/{accession}/{accession}_1.fastq.gz',
-        fastq_2='local/strep/samples/{accession}/{accession}_2.fastq.gz'
-    log:
-        'local/strep/samples/log/{accession}/strep_get_sample_fastq.log'
-    run:
-        # Download
-        out_dir = os.path.dirname(output.fastq_1)
-        shell("""bin/fastq-dump --split-files --gzip {input.sra} --outdir {out_dir} >{log} 2>&1""")
-
-# strep_get_sample_sra
-#
-# Download SRA file for sample.
-rule strep_get_sample_sra:
-    output:
-        sra=temp('local/strep/temp/samples/{accession}.sra')
-    log:
-        'local/strep/samples/log/{accession}/strep_get_sample_sra.log'
-    run:
-        sra_url = 'ftp://ftp-trace.ncbi.nih.gov/sra/sra-instant/reads/ByRun/sra/SRR/{}/{}/{}.sra'.format(
-            wildcards.accession[0:6], wildcards.accession, wildcards.accession
-        )
-
-        dest_dir = os.path.dirname(output.sra)
-
-        shell('wget -qc {sra_url} -P {dest_dir} -o {log}')

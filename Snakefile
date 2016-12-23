@@ -48,8 +48,12 @@ STREP_REGIONS = bedreader.bed_interval_to_dataframe(config['strep']['pbp_bed'])
 ### Rules ###
 #############
 
+### All (rules shared over multiple experiments) ###
+include: 'rules/all/variant.snakefile'
+include: 'rules/all/data.snakefile'
+
 ### Strep ###
 include: 'rules/strep/strep.snakefile'
 
-### All (rules shared over multiple experiments) ###
-include: 'rules/all/variant.snakemake'
+### MLST ###
+include: 'rules/mlst/mlst.snakefile'

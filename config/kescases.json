@@ -3,11 +3,16 @@
     "picard": "lib/picard.jar",
     "gatk": "lib/GenomeAnalysisTK.jar",
     "kestrel": "lib/kestrel/kestrel.jar",
-    "kanalyze": "lib/kestrel/kanalyze.jar"
+    "kanalyze": "lib/kestrel/kanalyze.jar",
+    "kesmlst": "lib/kesmlst/kestrelmlst.jar"
   },
   "strep": {
     "reference": "data/strep/NC_003028.fasta",
     "pbp_bed": "data/strep/NC_003028.pbp.bed",
     "accessions": "data/strep/Accessions"
+  },
+  "mlst": {
+    "accessions": "data/mlst/Accessions"
   }
 }
+
