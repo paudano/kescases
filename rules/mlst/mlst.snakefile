@@ -35,13 +35,20 @@ rule mlst_kesmlst_run_mlst:
     input:
         ikc='local/mlst/results/{accession}/kesmlst/kmertable.ikc'
     output:
-        out='local/mlst/results/{accession}/kesmlst/kesmlst_out',
-        time='local/mlst/results/{accession}/kesmlst/bm/kmertable.time',
-        trace='local/mlst/results/{accession}/kesmlst/bm/kmertable.trace'
+        tab='local/mlst/results/{accession}/kesmlst/mlst.tab',
+        time='local/mlst/results/{accession}/kesmlst/bm/kesmlst.time',
+        trace='local/mlst/results/{accession}/kesmlst/bm/kesmlst.trace'
+    log:
+        'local/mlst/results/{accession}/kesmlst/log/kesmlst.log'
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """java -Xmx2G -jar {tools.kesmlst} """
+        """java -Xmx2G -Dlogback.configurationFile=lib/kesmlst/logback.xml """
+            """-jar {tools.kesmlst} """
+            """data/mlst/db/mlst.fa """
+            """{input.ikc} """
+            """>{output.tab} """
+            """2>{log}"""
 
 # mlst_kesmlst_make_ikc
 #

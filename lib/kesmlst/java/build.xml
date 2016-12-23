@@ -42,8 +42,8 @@
 	<property name="dir.build" location="${dir.root}/build"/>
 	<property name="dir.build.classes" location="${dir.build}/classes"/>
 	
-	<property name="dir.lib" location="${dir.root}/../../../kestrel"/>
-	<property name="dir.onejar" location="${dir.root}/../../../lib/onejar"/>
+	<property name="dir.lib" location="${dir.root}/../../kestrel"/>
+	<property name="dir.onejar" location="${dir.root}/../../lib/onejar"/>
 	
 	<property name="dir.src" location="${dir.root}/src"/>
 	
@@ -61,7 +61,7 @@
 	<property name="build.java.version.target" value="${build.java.version.source}"/>
 	
 	<!-- Locations of libraries at run time -->
-	<property name="dir.run.lib" value="../../kestrel"/>
+	<property name="dir.run.lib" value="../kestrel"/>
 	<property name="lib.run.kestrel" value="${dir.run.lib}/kestrel.jar"/>
 	<property name="lib.run.kanalyze" value="${dir.run.lib}/kanalyze.jar"/>
 	<property name="lib.run.getopt" value="${dir.run.lib}/java-getopt-1.0.14.jar"/>

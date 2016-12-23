@@ -38,6 +38,7 @@ import edu.gatech.kestrel.writer.VariantWriterInitException;
 public class KesMLST {
 
 	public static void main(String[] args) {
+		
 		// TODO Auto-generated method stub
 		KmerUtil kUtil;  // k-mer utility
 		
@@ -271,7 +272,7 @@ public class KesMLST {
 				}
 			}
 				
-				System.out.println(sample.name);
+				//System.out.println(sample.name);
 				samCall.print();
 				System.out.println();
 			}
