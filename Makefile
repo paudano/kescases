@@ -1,4 +1,4 @@
-ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/R bin/Rscript bin/fastq-dump bin/blastn
+ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/R bin/Rscript bin/fastq-dump bin/blastn bin/quast.py
 
 ALL_NONFREE_TARGETS=lib/GenomeAnalysisTK.jar lib/picard.jar
 
@@ -16,6 +16,9 @@ lib/GenomeAnalysisTK.jar lib/picard.jar:
 		exit 1 ; \
 	fi ; \
 	echo OK
+
+bin/quast.py:
+	make -C build/quast
 
 bin/blastn:
 	make -C build/blast
