@@ -57,9 +57,10 @@ bin/spades.py:
 	make -C build/spades
 
 bin/vcf2tsv:
-	git submodule update --init --recursive build/vcflib
+	cd build; git clone --recursive git@github.com:vcflib/vcflib.git
+	cd build/vcflib; git checkout v1.0.0-rc1
 	make -C build/vcflib
-	ln ../build/vcflib/bin/$(notdir $@) $@
+
 
 .PHONY: clean
 clean:

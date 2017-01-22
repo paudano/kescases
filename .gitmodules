@@ -1,3 +1,0 @@
-[submodule "build/vcflib"]
-	path = build/vcflib
-	url = https://github.com/vcflib/vcflib.git
