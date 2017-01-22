@@ -1,4 +1,4 @@
-ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/R bin/Rscript bin/fastq-dump bin/blastn bin/quast.py bin/python2
+ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/R bin/Rscript bin/fastq-dump bin/blastn bin/quast.py bin/python2 bin/vcf2tsv
 
 ALL_NONFREE_TARGETS=lib/GenomeAnalysisTK.jar lib/picard.jar
 
@@ -55,6 +55,11 @@ bin/samtools:
 
 bin/spades.py:
 	make -C build/spades
+
+bin/vcf2tsv:
+	git submodule update --init --recursive build/vcflib
+	make -C build/vcflib
+	ln ../build/vcflib/bin/$(notdir $@) $@
 
 .PHONY: clean
 clean:
