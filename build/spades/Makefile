@@ -1,4 +1,4 @@
-VERSION=3.9.0
+VERSION=3.7.1
 BUILD_DIR=SPAdes-$(VERSION)
 INSTALL_TARGET=../../bin/spades.py
 INSTALL_SOURCE=../build/spades/$(BUILD_DIR)/spades.py
