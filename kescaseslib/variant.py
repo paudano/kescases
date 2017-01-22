@@ -38,7 +38,7 @@ class Variant:
         self.filter = filter
         self.var_depth = int(var_depth)
         self.loc_depth = int(loc_depth)
-        self.quality = float(quality)
+        self.quality = float(quality) if quality is not None else None
 
     def is_snp(self):
         """

@@ -132,7 +132,7 @@ rule mlst_assemble_link_scaffolds:
     output:
         scaffolds=temp('local/mlst/temp/{accession}/assemble/genome/scaffolds.fasta')
     shell:
-        """ln -srf $(readlink -f {input.scaffolds}) {output.scaffolds}"""
+        """ln -sf $(readlink -f {input.scaffolds}) {output.scaffolds}"""
 
 # mlst_assemble_run_assembly
 #

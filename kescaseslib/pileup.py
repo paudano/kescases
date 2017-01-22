@@ -81,15 +81,15 @@ def read_pileup_variants(pileup_file_name, sample_name, interval_container, no_c
                 read_base_org = read_base
 
                 # Check for a new interval
-                if current_interval is None or loc > current_interval.stop:
+                if current_interval is None or loc > current_interval.end:
 
                     # Add current sequence to the reference container
                     if current_interval is not None:
 
                         # Add no-call regions
                         if nc_start > 0:
-                            no_call.add_interval(current_interval.chr, None,
-                                                 nc_start, current_interval.stop)
+                            no_call.add_interval(current_interval.chrom, None,
+                                                 nc_start, current_interval.end)
 
                         # Reset
                         ref_sequence = ''
@@ -114,7 +114,7 @@ def read_pileup_variants(pileup_file_name, sample_name, interval_container, no_c
                     alt_sequence += ref
 
                     if depth == 1:
-                        no_call.add_interval(current_interval.chr, None, nc_start, loc - 1)
+                        no_call.add_interval(current_interval.chrom, None, nc_start, loc - 1)
                         nc_start = 0
 
                     else:
@@ -176,7 +176,7 @@ def read_pileup_variants(pileup_file_name, sample_name, interval_container, no_c
 
         # Write last no-call
         if current_interval is not None and nc_start > 0:
-            no_call.add_interval(current_interval.chr, None, nc_start, loc)
+            no_call.add_interval(current_interval.chrom, None, nc_start, loc)
 
         # Write BED file
         if no_call_bed is not None:
