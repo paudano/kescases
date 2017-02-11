@@ -3,8 +3,11 @@ Variant call quality, metrics, and summary statistics
 """
 
 import pandas as pd
+import numpy as np
 
 from kescaseslib import interval
+from kescaseslib import kesutil
+from kescaseslib import variant
 
 
 #################
@@ -47,7 +50,10 @@ def _merge_variant_data_frames(input):
     pbp_interval = interval.IntervalContainer()
     pbp_interval.add_bed(input.pbp)
 
-    df['REGION'] = df.apply(lambda row: str(pbp_interval.get_interval(row['CHROM'], row['POS'])), axis=1)
+    if df.shape[0] > 0:
+        df['REGION'] = df.apply(lambda row: str(pbp_interval.get_interval(row['CHROM'], row['POS'])), axis=1)
+    else:
+        df['REGION'] = pd.Series(dtype=object)
 
     # Return dataframe
     return df
@@ -70,26 +76,89 @@ def _get_depth_column_from_pileup(df, pileup_file_name):
 
     return df.apply(lambda row: depth_df[(row['CHROM'], row['POS'])] if (row['CHROM'], row['POS']) in depth_df else 0, axis=1)
 
+def _set_filter_and_id(df, filter_container):
+    """
+    Set the FILTER and ID fields in a dataframe of variants.
+
+    :param df: Dataframe of all variants. Must contain fields "CHROM", "POS", "REF", and "ALT".
+    :param filter_container: Interval container with filtered regions loaded. The `tag` field of each
+        interval in the container is used to annotated the FILTER column for variants within it. Filters
+        are processed in the order they are read.
+    """
+
+    if df.shape[0] == 0:
+        return
+
+    # Get list of variants
+    var_list = df.apply(
+        lambda row: variant.Variant(row['CHROM'], row['POS'], row['REF'], row['ALT'], None, row['SAMPLE']),
+        axis=1
+    )
+
+    # Set ID
+    df['ID'] = [str(variant) for variant in var_list]
+
+    # Set FILTER
+    df['FILTER'] = [
+        filter_region.tag if filter_region is not None else 'PASS' for filter_region in [
+            filter_container.get_interval(variant.chrom, variant.start, variant.get_end()) for variant in var_list
+        ]
+    ]
+
 
 #############
 ### Rules ###
 #############
 
+# strep_annotate_variant_calls
+#
+# Add ID and FILTER columns.
+rule strep_annotate_variant_calls:
+    input:
+        tab='local/strep/temp/{accession}/{pipeline}/variants_unannotated.tab',
+        nc_bed='local/strep/results/{accession}/assemble/no_consensus.bed',
+        bl_tab='data/strep/NC_003028.blacklist.tab'
+    output:
+        tab='local/strep/results/{accession}/{pipeline}/variants.tab'
+    run:
+
+        # Read variants and the blacklist
+        df = pd.read_table(input.tab, header=0)
+
+        # Initialize filters
+        filter_container = interval.IntervalContainer()
+
+        filter_container.add_bed(input.nc_bed, 'NO_CONSENSUS')
+        filter_container.add_blacklist(input.bl_tab, wildcards.accession)
+
+        # Annotate filter
+        _set_filter_and_id(df, filter_container)
+
+        # Write
+        df.to_csv(output.tab, sep='\t', index=False)
+
 # strep_variant_merge_kestrel_vcf_eval
 #
-# Merge Kestrel TP, FP, and FN calls annotated by vcfeval.
+# Merge Kestrel TP, FP, and FN calls annotated by vcfeval. Add a filed for the alignment depth.
 rule strep_variant_merge_kestrel_vcf_eval:
     input:
         tp='local/strep/temp/{accession}/kestrel/tp.tab',
         fp='local/strep/temp/{accession}/kestrel/fp.tab',
         fn='local/strep/temp/{accession}/kestrel/fn.tab',
+        pileup='local/strep/results/{accession}/gatk/pileup.tab',
         pbp=STREP_PBP_BED
     output:
-        tab='local/strep/results/{accession}/kestrel/variants.tab'
+        tab=temp('local/strep/temp/{accession}/kestrel/variants_unannotated.tab')
     run:
 
         # Get merged variants
         df = _merge_variant_data_frames(input)
+
+        # Annotate alignment depth
+        if df.shape[0] > 0:
+            df['DEPTH'] = _get_depth_column_from_pileup(df, input.pileup)
+        else:
+            df['DEPTH'] = pd.Series({}, dtype=np.int32)
 
         # Write table
         df.to_csv(output.tab, sep='\t', index=False)
@@ -105,23 +174,25 @@ rule strep_variant_merge_gatk_vcf_eval:
         pileup='local/strep/results/{accession}/gatk/pileup.tab',
         pbp=STREP_PBP_BED
     output:
-        tab='local/strep/results/{accession}/gatk/variants.tab'
+        tab=('local/strep/temp/{accession}/gatk/variants_unannotated.tab')
     run:
 
         # Get merged variants
         df = _merge_variant_data_frames(input)
 
         # Annotate alignment depth
-        df['DEPTH'] = _get_depth_column_from_pileup(df, input.pileup)
+        if df.shape[0] > 0:
+            df['DEPTH'] = _get_depth_column_from_pileup(df, input.pileup)
+        else:
+            df['DEPTH'] = pd.Series({}, dtype=np.int32)
 
         # Write table
         df.to_csv(output.tab, sep='\t', index=False)
 
-
 # strep_variant_vcf_eval_to_table
 #
 # Convert compared variants to a table file
-rule strep_variant_vcf_eval_to_table:
+rule strep_variant_vcfeval_to_table:
     input:
         vcf='local/strep/results/{accession}/{pipeline}/vcfeval/{call}.vcf.gz',
     output:
@@ -136,7 +207,6 @@ rule strep_variant_vcf_eval_to_table:
             """awk -v OFS="\t" '{{$8 = "."; print}}' | """
             """bin/vcf2tsv -g | """
             """awk -vOFS="\t" -vCALLTYPE={call_type} '(NR == 1) {{$(NF + 1) = "CALL"; print}} (NR > 1) {{$(NF + 1) = CALLTYPE; print}}' """
-#            """xargs -I LINE echo -e "LINE\t{call_type}" """
             """> {output.tab}"""
         )
 
@@ -145,24 +215,34 @@ rule strep_variant_vcf_eval_to_table:
 # Compare variants in GATK or Kestrel calls to the assembly calls.
 rule strep_variant_vcfeval:
     input:
-        vcf='local/strep/results/{accession}/{pipeline,kestrel|gatk}/variants.vcf.gz',
+        vcf='local/strep/results/{accession}/{pipeline}/variants.vcf.gz',
         base_vcf='local/strep/results/{accession}/assemble/variants.vcf.gz',
         ref=STREP_REF,
         pbp=STREP_PBP_BED,
         rtg_flag=STREP_RTG_INDEX_FLAG
     output:
-        tp='local/strep/results/{accession}/{pipeline}/vcfeval/tp.vcf.gz',
-        fp='local/strep/results/{accession}/{pipeline}/vcfeval/fp.vcf.gz',
-        fn='local/strep/results/{accession}/{pipeline}/vcfeval/fn.vcf.gz',
-        baseline='local/strep/results/{accession}/{pipeline}/vcfeval/tp-baseline.vcf.gz',
+        tp='local/strep/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/tp.vcf.gz',
+        fp='local/strep/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/fp.vcf.gz',
+        fn='local/strep/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/fn.vcf.gz',
+        baseline='local/strep/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/tp-baseline.vcf.gz'
     log:
         'local/strep/results/{accession}/{pipeline}/log/strep_variant_vcfeval.log'
-    shell:
-        """rm -rf $(dirname {output.tp}); """
-        """bin/rtg vcfeval """
-            """-t $(dirname {input.rtg_flag}) """
-            """-b {input.base_vcf} """
-            """-c {input.vcf} """
-            """-o $(dirname {output.tp}) """
-            """--bed-regions {input.pbp} """
-            """>{log} 2>&1"""
+    run:
+        if kesutil.has_uncommented_lines(input.base_vcf):
+            shell(
+                """rm -rf $(dirname {output.tp}); """
+                """bin/rtg vcfeval """
+                    """-t $(dirname {input.rtg_flag}) """
+                    """-b {input.base_vcf} """
+                    """-c {input.vcf} """
+                    """-o $(dirname {output.tp}) """
+                    """--bed-regions {input.pbp} """
+                    """>{log} 2>&1"""
+            )
+        else:
+            shell(
+                """cp {input.base_vcf} {output.fn}; """
+                """cp {input.base_vcf} {output.baseline}; """
+                """cp {input.vcf} {output.tp}; """
+                """cp {input.vcf} {output.fp}"""
+            )

@@ -4,6 +4,8 @@ Rules and variables common to the MLST experiment.
 
 from kescaseslib import interval
 
+import pandas as pd
+
 
 ###################
 ### Definitions ###
@@ -21,12 +23,70 @@ with open(config['mlst']['accessions'], 'r') as in_file:
 
         MLST_ACCESSIONS.append(line)
 
+def _mlst_get_match_series(accession):
+    """
+    Get a series of booleans for each gene where 'True' indicates if the MLST and KesMLST
+    approaches agreed.
+    """
+
+    match_series = pd.read_table(
+        'local/mlst/results/{}/mlst_merged_calls.tab'.format(accession),
+        header=0,
+        index_col=0
+    ).apply(lambda row: row['MLST'] == row['KesMLST'], axis=1)
+
+    match_series.name = accession
+
+    return match_series
+
 
 #############
 ### Rules ###
 #############
 
-### Run MLST with K-mers ###
+#
+# Merge MLST results from both callers
+#
+
+rule mlst_summary_table:
+    input:
+        tab=expand('local/mlst/results/{accession}/mlst_merged_calls.tab', accession=MLST_ACCESSIONS)
+    output:
+        tab='local/mlst/summary/mlst_summary.tab'
+    run:
+
+        pd.concat(
+            [_mlst_get_match_series(accession) for accession in MLST_ACCESSIONS],
+            axis=1
+        ).to_csv(output.tab, sep='\t', index_label='Gene')
+
+
+
+# mlst_merge_results
+#
+# Merge results from both pipelines for each sample.
+rule mlst_merge_results:
+    input:
+        asm='local/mlst/results/{accession}/assemble/mlst_calls.tab',
+        kes='local/mlst/results/{accession}/kesmlst/mlst_calls.tab'
+    output:
+        tab='local/mlst/results/{accession}/mlst_merged_calls.tab'
+    run:
+
+        # Read dataframes
+        df_asm = pd.read_table(input.asm, names=('Gene', 'MLST'), index_col=0)
+        df_kes = pd.read_table(input.kes, skiprows=1, names=('Gene', 'KesMLST', 'Distance'), index_col=0)
+
+        df_asm = df_asm.ix[df_asm.index != 'ST', :]
+
+        # Concatenate
+        df_merged = pd.concat([df_asm['MLST'], df_kes['KesMLST'], df_kes['Distance']], axis=1)
+
+        # Write
+        df_merged.to_csv(output.tab, sep='\t', index_label='Gene')
+#
+# Run MLST with K-mers
+#
 
 # mlst_kesmlst_run_mlst
 #
@@ -78,7 +138,10 @@ rule mlst_kesmlst_make_ikc:
             """{input.fq_1} {input.fq_2} """
             """> {log}"""
 
-### Run MLST from assembly ###
+
+#
+# Run MLST from assembly
+#
 
 # mlst_assemble_parse_results
 #
@@ -109,7 +172,7 @@ rule mlst_assemble_run_mlst:
         time='local/mlst/results/{accession}/assemble/bm/mlst_asm.time',
         trace='local/mlst/results/{accession}/assemble/bm/mlst_asm.trace'
     log:
-        'local/strep/mlst/{accession}/assemble/log/mlst.log'
+        'local/mlst/results/{accession}/assemble/log/mlst.log'
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """

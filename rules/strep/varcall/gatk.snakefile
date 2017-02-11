@@ -121,6 +121,9 @@ rule strep_gatk_realign_target_creator:
             """-I {input.bam} -o {output.intervals} """
             """>{log} 2>&1"""
 
+# strep_gatk_index_marked_bam
+#
+# Index BAM.
 rule strep_gatk_index_marked_bam:
     input:
         bam='local/strep/temp/{accession}/gatk/align_marked.bam'

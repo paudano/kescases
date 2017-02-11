@@ -17,11 +17,11 @@ rule strep_get_sample_fastq:
 # strep_get_sample_sra
 #
 # Download SRA file for sample.
-rule strep_get_sample_sra:
+rule data_get_sample_sra:
     output:
-        sra=temp('local/{exp}/temp/samples/{accession}.sra')
+        sra=temp('local/{exp,strep|mlst}/temp/samples/{accession,(SRR|ERR)\d+}.sra')
     log:
-        'local/{exp,strep|mlst}/samples/log/{accession}/strep_get_sample_sra.log'
+        'local/{exp}/samples/log/{accession}/strep_get_sample_sra.log'
     run:
         sra_url = 'ftp://ftp-trace.ncbi.nih.gov/sra/sra-instant/reads/ByRun/sra/{}/{}/{}/{}.sra'.format(
             wildcards.accession[0:3], wildcards.accession[0:6], wildcards.accession, wildcards.accession

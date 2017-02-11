@@ -1,4 +1,4 @@
-ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/R bin/Rscript bin/fastq-dump bin/blastn bin/quast.py bin/python2 bin/vcf2tsv
+ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/fastq-dump bin/blastn bin/quast.py bin/python2 bin/vcf2tsv
 
 ALL_NONFREE_TARGETS=lib/GenomeAnalysisTK.jar lib/picard.jar
 
@@ -26,8 +26,8 @@ bin/blastn:
 bin/fastq-dump:
 	make -C build/sra
 
-bin/R bin/Rscript:
-	make -C build/r
+#bin/R bin/Rscript:
+#	make -C build/r
 
 bin/rtg:
 	make -C build/rtg
@@ -60,7 +60,7 @@ bin/vcf2tsv:
 	cd build; git clone --recursive git@github.com:vcflib/vcflib.git
 	cd build/vcflib; git checkout v1.0.0-rc1
 	make -C build/vcflib
-
+	ln -s ../build/vcflib/bin/vcf2tsv bin/
 
 .PHONY: clean
 clean:

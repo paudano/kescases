@@ -31,7 +31,7 @@ $(BUILD_DIR)/bin/R $(BUILD_DIR)/bin/Rscript: $(BUILD_DIR)/Makefile
 
 # Run configure (create Makefile)
 $(BUILD_DIR)/Makefile: $(BUILD_DIR)/configure
-	cd $(BUILD_DIR); ./configure --prefix=$(realpath .) --with-x=no
+	cd $(BUILD_DIR); ./configure --prefix=$(realpath .) --with-x=no --enable-R-shlib --enable-BLAS-shlib
 
 # Expand download
 $(BUILD_DIR)/configure: $(DL_FILE)

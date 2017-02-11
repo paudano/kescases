@@ -1,3 +1,5 @@
+import pandas as pd
+
 class Interval:
     """
     Defines an interval of the reference genome.
@@ -6,9 +8,11 @@ class Interval:
     :param name: Region name.
     :param start: Start base (1-based, inclusive).
     :param end: End base (1-based, inclusive).
+    :param tag: Optional tag for the interval. For example, if the interval is a filtered region,
+        the tag may contain information about why it was filtered.
     """
 
-    def __init__(self, chrom, name, start, end):
+    def __init__(self, chrom, name, start, end, tag=None):
 
         if name is None:
             name = '{}-{}-{}'.format(chrom, start, end)
@@ -17,6 +21,7 @@ class Interval:
         self.name = name
         self.start = int(start)
         self.end = int(end)
+        self.tag = tag
 
     def is_in_interval(self, chrom, locus):
         """
@@ -28,6 +33,22 @@ class Interval:
         :return: True if the location is in this interval, and False if it is not.
         """
         return chrom == chrom and self.start <= locus <= self.end
+
+    def range_in_interval(self, chrom, start, end):
+        """
+        Determine if a range of bases overlaps this interval by at least one base.
+
+        :param chrom: Chomosome.
+        :param start: Start (1-based, inclusive)
+        :param end: End (1-based, inclusive)
+
+        :return: `True` if the range is in this interval.
+        """
+
+        if chrom != self.chrom:
+            return False
+
+        return start <= self.end and end >= self.start
 
     def __repr__(self):
         """
@@ -134,7 +155,7 @@ class IntervalContainer:
         self.interval_map = dict()
         self.interval_list = []
 
-    def add_interval(self, chrom, name, start, end):
+    def add_interval(self, chrom, name, start, end, tag=None):
         """
         Add an interval to this container.
 
@@ -142,34 +163,46 @@ class IntervalContainer:
         :param name: Interval name or ``None`` to build a default name.
         :param start: Start position (1-based, inclusive).
         :param end: end position (1-based, inclusive).
+        :param tag: Optional tag describing this interval.
         """
 
-        interval = Interval(chrom, name, start, end)
+        interval = Interval(chrom, name, start, end, tag)
 
         self.interval_map[interval.name] = interval
         self.interval_list.append(interval.name)
 
-    def get_interval(self, chrom, position):
+    def get_interval(self, chrom, pos, end=None):
         """
         Find an interval by the chromosome name and a position included within it.
 
         :param chrom: Chromosome name.
-        :param position: Position within the interval.
+        :param pos: Position within the interval.
+        :param end: End position to search, or `None` search for a single base at `pos`.
 
-        :return: An Interval object or None if no matching interval was found.
+        :return: An Interval object or `None` if no matching interval was found.
         """
 
-        for interval in self.interval_map.values():
-            if interval.chrom == chrom and interval.start <= position <= interval.end:
+        if end is None:
+            end = pos
+
+        for interval_name in self.interval_list:
+
+            interval = self.interval_map[interval_name]
+
+            if interval.chrom != chrom:
+                continue
+
+            if pos <= interval.end and end >= interval.start:
                 return interval
 
         return None
 
-    def add_bed(self, bed_file_name):
+    def add_bed(self, bed_file_name, tag=None):
         """
         Add intervals by BED file.
 
         :param bed_file_name: Name of the BED file to add.
+        :param tag: Optional tag describing the intervals in this BED file.
         """
 
         line_count = 0
@@ -201,51 +234,39 @@ class IntervalContainer:
                     name = '{}-{}-{}'.format(chrom, start, end)
 
                 # Add entry
-                self.add_interval(chrom, name, start, end)
+                self.add_interval(chrom, name, start, end, tag)
 
-    def add_nc_tab(self, nc_tab_file, accession):
+    def add_blacklist(self, blacklist_file_name, accession):
         """
-        Read a no-call tab file and add any intervals that match `accession`
+        Read a blacklist tab file and add any intervals that match `accession`.
 
-        The first line of the no-call tab file is a header, and it is ignored. Any lines beginning with `#`
+        The first line of the blacklist file is a header. Any lines beginning with `#`
         and blank lines are also ignored. The rest are tab-separated fields.
 
         Fields:
-        1) Chromosome name.
-        2) Accession or sample name.
-        3) Start position (1-based, inclusive)
-        4) End position (1-based, inclusive)
-        5) Type: A keyword (such as "BADASM" for a bad assembly, "CONTAMINATION" for contaminated data, or
-            "INCOMPLETE" if the sequence data is known to not cover the genome sufficiently).
+        1) chr: Chromosome name.
+        2) accession: Accession or sample name.
+        3) start: Start position (1-based, inclusive)
+        4) end: End position (1-based, inclusive)
+        5) type: A keyword (such as "BADASM" for a bad assembly, "CONTAMINATION" for contaminated data, or
+            "INCOMPLETE" if the sequence data is known to not cover the genome sufficiently). This becomes
+            the filter tag.
 
-        :param nc_tab_file: No-call tab file name.
-        :param accession: Extract regions for this accession or sample name.
+        Fields beyond these (such as the "reason" field in the blacklist file) are not used.
+
+        :param blacklist_file_name: Blacklist file name.
+        :param accession: Extract regions for this accession.
         """
 
-        with open(nc_tab_file, 'r') as nc_file:
+        # Read blacklist entries for this accession
+        df_bl = pd.read_table(blacklist_file_name, header=0, skip_blank_lines=True, comment='#')
+        df_bl = df_bl.ix[df_bl['accession'] == accession, :]
 
-            line_number = 0
+        if df_bl.shape[0] > 0:
+            for row in df_bl.iterrows():
+                row = row[1]
 
-            # Read each line
-            for line in nc_file:
-                line_number += 1
-
-                # Skip header
-                if line_number == 1:
-                    continue
-
-                line = line.strip()
-
-                # Skip empty and commented lines
-                if not line or line.startswith('#'):
-                    continue
-
-                # Tokenize
-                tok = line.split('\t')
-
-                # Add region
-                if tok[1] == accession:
-                    self.add_interval(tok[0], '{0}-{2}-{4}'.format(*tok), int(tok[2]), int(tok[3]))
+                self.add_interval(row['chr'], None, row['start'], row['end'], row['type'])
 
     def get_interval_count(self):
         """

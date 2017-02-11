@@ -39,7 +39,9 @@ def _strep_get_all_sample_file_names(wildcards):
 ### Rules ###
 #############
 
-### RTG on Reference ###
+#
+# RTG on Reference
+#
 
 # strep_rtg_index_reference
 #
@@ -53,9 +55,12 @@ rule strep_rtg_index_reference:
         'local/strep/reference/log/strep_rtg_index_reference.log'
     shell:
         """rm -rf $(dirname {output.rtg_flag}); """  # RTG fails if the directory exists, and it is automatically created by snakemake
-        """bin/rtg format -o $(dirname {output.rtg_flag}) {input.ref} >{log} 2>&1"""
+        """bin/rtg format -o $(dirname {output.rtg_flag}) {input.ref} >{log} 2>&1; """
+        """touch {output.rtg_flag}"""
 
-### Reference ###
+#
+# Reference
+#
 
 # strep_reference_index_picard
 #

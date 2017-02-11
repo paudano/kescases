@@ -46,10 +46,13 @@ rule strep_kestrel_make_ikc:
     output:
         ikc='local/strep/results/{accession}/kestrel/kmertable.ikc',
         time='local/strep/results/{accession}/kestrel/bm/kmertable.time',
-        trace='local/strep/results/{accession}/kestrel/bm/kmertable.trace'
+        trace='local/strep/results/{accession}/kestrel/bm/kmertable.trace',
+        seg_size='local/strep/results/{accession}/kestrel/bm/seg_size',
+        seg_count='local/strep/results/{accession}/kestrel/bm/seg_count'
     log:
         'local/strep/results/{accession}/kestrel/log/kmertable.log'
     shell:
+        """mkdir -p local/strep/temp/{wildcards.accession}/kanalyze; """
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
         """java -Xmx3G -jar {tools.kanalyze} """
@@ -59,6 +62,14 @@ rule strep_kestrel_make_ikc:
             """--quality=10 """
             """-m ikc """
             """--minsize 15 """
+            """--temploc local/strep/temp/{wildcards.accession}/kanalyze """
+            """--noautodelete """
             """-o {output.ikc} """
             """{input.fq_1} {input.fq_2} """
-            """> {log}"""
+            """> {log}; """
+        """ls -l --block-size=1024 local/strep/temp/{wildcards.accession}/kanalyze | """
+            """head -n 1 | """
+            """awk '{{print $2}}' > {output.seg_size}; """
+        """/bin/ls --block-size=1024 local/strep/temp/{wildcards.accession}/kanalyze | """
+            """wc -l > {output.seg_count}; """
+        """rm -rf local/strep/temp/{wildcards.accession}/kanalyze"""

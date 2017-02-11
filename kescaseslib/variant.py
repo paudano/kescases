@@ -21,24 +21,59 @@ class Variant:
     :param var_depth: Estimated depth of reads supporting this variant.
     :param loc_depth: Estimated read depth at this locus.
     :param quality: Variant quality score or `None`.
+    :param include_pad: Insertion and deletion variants include pad bases. If `False`, then `ref` or
+        `alt` is an empty string for an insertion or a deletion (respectively). If `True`, `ref` or
+        `alt` has more than one base. `start` is the 1-based inclusive position of the first base
+        in `ref` regardless of the variant type.
     """
 
     def __init__(self, chrom, start, ref, alt, interval,
                  sample_name, format=None, call=None, filter=None,
-                 var_depth=None, loc_depth=None, quality=None):
+                 var_depth=None, loc_depth=None, quality=None, include_pad=False):
 
         self.chrom = chrom
         self.start = int(start)
-        self.ref = ref
-        self.alt = alt
+        self.ref = ref.upper()
+        self.alt = alt.upper()
         self.interval = interval
         self.sample_name = sample_name
         self.format = format
         self.call = call
         self.filter = filter
-        self.var_depth = int(var_depth)
-        self.loc_depth = int(loc_depth)
+        self.var_depth = int(var_depth) if var_depth is not None else None
+        self.loc_depth = int(loc_depth) if var_depth is not None else None
         self.quality = float(quality) if quality is not None else None
+
+        # Update ref and alt if a pad base was included
+        if include_pad and (len(self.ref) > 1 or len(self.alt) > 1):
+
+            # Both ref and alt cannot be more than one base (only one can be)
+            if len(self.ref) > 1 and len(self.alt) > 1:
+                raise ValueError(
+                    (
+                        'Reference and alternate alleles are both longer than one base: '
+                        'ref="{}", alt="{}", chrom="{}", start="{}"'
+                    ).format(self.ref, self.alt, self.chrom, self.start)
+                )
+
+            # Remove pad
+            if self.ref[0] == self.alt[0]:
+                self.ref = self.ref[1:]
+                self.alt = self.alt[1:]
+                self.start += 1
+
+            elif self.ref[-1] == self.alt[-1]:
+                self.ref = self.ref[:-1]
+                self.alt = self.alt[:-1]
+
+            else:
+                raise ValueError(
+                    (
+                        'Variant is an indel with padding, but ref and alt alleles '
+                        'do not start or do not end with the same base: '
+                        'ref="{}", alt="{}", chrom="{}", start="{}"'
+                    ).format(self.ref, self.alt, self.chrom, self.start)
+                )
 
     def is_snp(self):
         """
@@ -78,6 +113,18 @@ class Variant:
             return len(self.alt)
 
         return len(self.ref)
+
+    def get_end(self):
+        """
+        Get the last reference base affected by this variant.
+
+        :return: Last reference base affected by this variant.
+        """
+
+        if self.is_snp() or self.is_ins():
+            return self.start
+
+        return self.start + self.length() - 1
 
     def compare(self, other):
         """
@@ -181,10 +228,10 @@ class Variant:
         if len(self.ref) == 1 and len(self.alt) == 1:
             return '{start}{ref}>{alt}'.format(**self.__dict__)
 
-        if len(self.ref) == 0:
+        if len(self.ref) == 1:
             return '{start}ins{alt}'.format(**self.__dict__)
 
-        if len(self.alt) == 0:
+        if len(self.alt) == 1:
             return '{}-{}del'.format(self.start, self.start + len(self.ref) - 1)
 
         return 'UNKNOWN_VAR[start={start}, ref={ref}, alt={alt}]'.format(**self.__dict__)

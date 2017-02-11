@@ -12,7 +12,7 @@ all: $(INSTALL_TARGET_DIR)/python $(INSTALL_TARGET_DIR)/python2 $(INSTALL_TARGET
 
 
 $(INSTALL_TARGET_DIR)/python: kescases_pkg_flag
-	ln -sf $(INSTALL_TARGET_PREFIX)/$(notdir $@) $@
+	ln -sf $(INSTALL_TARGET_ENV_PREFIX)/$(notdir $@) $@
 
 $(INSTALL_TARGET_DIR)/snakemake: kescases_pkg_flag
 	ln -sf $(INSTALL_TARGET_ENV_PREFIX)/$(notdir $@) $@
