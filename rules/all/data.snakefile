@@ -1,7 +1,15 @@
+"""
+Download and manage data.
+"""
+
+#############
+### Rules ###
+#############
+
 # strep_get_sample
 #
 # Dump paired-end FASTQ files from SRA file.
-rule strep_get_sample_fastq:
+rule data_get_sample_fastq:
     input:
         sra='local/{exp}/temp/samples/{accession}.sra'
     output:

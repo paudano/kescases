@@ -2,8 +2,15 @@
 Rules for downloading sequence data to analyze.
 """
 
+import collections
+import gzip
+import io
 import os
 
+import pandas as pd
+import numpy as np
+
+from Bio import SeqIO
 
 #######################
 ### Local Variables ###
@@ -31,13 +38,56 @@ def _strep_get_all_sample_file_names(wildcards):
     input_file_names = list()
 
     for accession in STREP_ACCESSIONS:
-        list.append('local/strep/samples/{accession}/{accession}_1.fastq.gz'.format(accession))
-        list.append('local/strep/samples/{accession}/{accession}_2.fastq.gz'.format(accession))
+        input_file_names.append('local/strep/samples/{}/{}_1.fastq.gz'.format(accession, accession))
+        input_file_names.append('local/strep/samples/{}/{}_2.fastq.gz'.format(accession, accession))
+
+    return input_file_names
 
 
 #############
 ### Rules ###
 #############
+
+#
+# Sequnece data information
+#
+
+
+rule strep_count_reads_and_bases:
+    input:
+        fq=_strep_get_all_sample_file_names
+    output:
+        tab='local/strep/samples/sample_seq_summary.tab'
+    run:
+
+        # Create an empty data frame
+        df = pd.DataFrame([], columns=['reads', 'bases'], dtype=(np.int64, np.int64))
+
+        # Read sequence data for each accession
+        for accession in STREP_ACCESSIONS:
+            record_count = 0
+            base_count = 0
+
+            # Read base and record count
+            for in_file_name in ['local/strep/samples/{}/{}_{}.fastq.gz'.format(accession, accession, n) for n in range(1, 3)]:
+                with io.TextIOWrapper(gzip.open(in_file_name)) as fq_file:
+                    for seq_record in SeqIO.parse(fq_file, 'fastq'):
+                        record_count += 1
+                        base_count += len(seq_record.seq)
+
+            # Add to table
+            ser = pd.Series({'reads': record_count, 'bases': base_count}, dtype=(np.int64, np.int64))
+            ser.name = accession
+
+            df = df.append(ser)
+
+        # Make integers
+        df = df.astype(np.int64)
+
+        # Write table
+        df.to_csv(output.tab, sep='\t', index=True, index_label='accession')
+
+
 
 #
 # RTG on Reference
