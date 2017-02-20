@@ -43,6 +43,19 @@ def _summarize_trace_table(tab_file_name, accession):
 ### Rules ###
 #############
 
+# strep_summary_bam_vs_ikc_file_size
+#
+# Summarize file sizes by number of reads.
+rule strep_summary_bam_vs_ikc_file_size:
+    input:
+        tab='local/strep/summary/benchmarks/seq_file_size.tab'
+    output:
+        pdf='local/strep/summary/plots/size/size_ikc_bam_by_reads.pdf',
+        eps='local/strep/summary/plots/size/size_ikc_bam_by_reads.eps',
+        rdata='local/strep/summary/plots/size/size_ikc_bam_by_reads.RData'
+    shell:
+        """Rscript scripts/plots/strep_file_reads_size_plot.R {input.tab} local/strep/summary/plots/size/size_ikc_bam_by_reads"""
+
 #
 # Phylogeny circos plot
 #
@@ -162,13 +175,15 @@ rule strep_summary_merge_runtime_tables:
 
 # strep_summary_merge_ikc_disk_usage
 #
-# Get IKC segment file count and disk usage for each accession. Sizes are in KB.
+# Get IKC segment file count and disk usage (sizes in KB) along with the number
+# of sequence reads and bases for each sample.
 rule strep_summary_merge_ikc_disk_usage:
     input:
         seg_size=expand('local/strep/results/{accession}/kestrel/bm/seg_size', accession=STREP_ACCESSIONS),
         seg_count=expand('local/strep/results/{accession}/kestrel/bm/seg_count', accession=STREP_ACCESSIONS),
         ikc=expand('local/strep/results/{accession}/kestrel/kmertable.ikc', accession=STREP_ACCESSIONS),
-        bam=expand('local/strep/results/{accession}/gatk/sample.bam', accession=STREP_ACCESSIONS)
+        bam=expand('local/strep/results/{accession}/gatk/sample.bam', accession=STREP_ACCESSIONS),
+        seq_tab='local/strep/samples/sample_seq_summary.tab'
     output:
         tab='local/strep/summary/benchmarks/seq_file_size.tab'
     run:
@@ -194,9 +209,13 @@ rule strep_summary_merge_ikc_disk_usage:
 
             ikc_stat_list[-1].name = accession
 
+        # Read sequence data
+        df_seq = pd.read_table(input.seq_tab, header=0, index_col=0)
+
         # Merge and write
         df = pd.concat(ikc_stat_list, axis=1).transpose()
-        df = df.ix[:, ('ikc_size', 'bam_size', 'seg_size', 'seg_n')]
+        df = pd.concat([df, df_seq], axis=1)
+        df = df.ix[:, ('ikc_size', 'bam_size', 'seg_size', 'seg_n', 'reads', 'bases')]
 
         df.to_csv(output.tab, sep='\t', index=True, index_label='accession')
 
