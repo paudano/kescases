@@ -134,8 +134,10 @@ rule strep_reference_index_bwa:
         ref=STREP_REF
     output:
         index_files=STREP_BWA_INDEX_LIST
+    log:
+        'local/ecoli/reference/log/bwa_index.log'
     shell:
-        """bin/bwa index {input.ref}"""
+        """bin/bwa index {input.ref} >{log} 2>&1"""
 
 # strep_reference_index_samtools
 #
@@ -145,8 +147,10 @@ rule strep_reference_index_samtools:
         ref=STREP_REF
     output:
         fai=STREP_REF_FAI
+    log:
+        'local/ecoli/reference/log/samtools_faidx.log'
     shell:
-        """bin/samtools faidx {input.ref}"""
+        """bin/samtools faidx {input.ref} >{log} 2>&1"""
 
 # strep_cp_reference
 #

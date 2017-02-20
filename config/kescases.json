@@ -13,5 +13,8 @@
   },
   "mlst": {
     "accessions": "data/mlst/Accessions"
+  },
+  "ecoli": {
+    "reference": "data/ecoli/NC_000913.fasta.gz"
   }
 }

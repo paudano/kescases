@@ -57,3 +57,6 @@ include: 'rules/strep/strep.snakefile'
 
 ### MLST ###
 include: 'rules/mlst/mlst.snakefile'
+
+### E. coli ###
+include: 'rules/ecoli/ecoli.snakefile'

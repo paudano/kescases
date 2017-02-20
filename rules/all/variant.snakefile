@@ -2,6 +2,13 @@
 Rules for variant calling that multiple pipelines may use.
 """
 
+#############
+### Rules ###
+#############
+
+# vcf_to_tabix
+#
+# bgzip and index a variants VCF file.
 rule vcf_to_tabix:
     input:
         vcf='local/{experiment}/temp/{accession}/{pipeline}/variants.vcf'

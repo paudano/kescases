@@ -13,7 +13,8 @@ Rules for calling variants with Kestrel.
 rule strep_kestrel_call:
     input:
         ikc='local/strep/results/{accession}/kestrel/kmertable.ikc',
-        interval=config['strep']['pbp_bed']
+        interval=config['strep']['pbp_bed'],
+        ref=STREP_REF,
     output:
         vcf=temp('local/strep/temp/{accession}/kestrel/variants.vcf'),
         time='local/strep/results/{accession}/kestrel/bm/variants.time',
@@ -24,7 +25,7 @@ rule strep_kestrel_call:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
         """java -Xmx2G -jar {tools.kestrel} """
-            """-r {STREP_REF} """
+            """-r {input.ref} """
             """-m vcf """
             """--noanchorboth """
             """--varfilter="coverage:0.5,5" """

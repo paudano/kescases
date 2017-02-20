@@ -131,7 +131,7 @@ def read_pileup_variants(pileup_file_name, sample_name, interval_container, no_c
                 # Remove read start-end markers
                 read_base = re.sub('[.,$]|(\^.)', '', read_base)
 
-                # Check for deletion
+                # Check for deletion (handled in a previous line)
                 if read_base == '*':
                     read_base = ''
                     continue
@@ -142,7 +142,7 @@ def read_pileup_variants(pileup_file_name, sample_name, interval_container, no_c
                     continue
 
             # Convert to variant
-            if re.match('[ACGT]', read_base):
+            if re.match('[ACGTN]', read_base):
                 alt = read_base[0]
 
                 if len(alt) > 1:
@@ -150,15 +150,15 @@ def read_pileup_variants(pileup_file_name, sample_name, interval_container, no_c
                 else:
                     read_base = ''
 
-            elif re.match('\+\d+[ACGT]+', read_base):
+            elif re.match('\+\d+[ACGTN]+', read_base):
                 loc += 1
                 ref = ''
-                alt = re.sub('\+\d+([ACGT]+)', '\\1', read_base)
+                alt = re.sub('\+\d+([ACGTN]+)', '\\1', read_base)
                 read_base = ''
 
-            elif re.match('\-\d+[ACGT]+', alt):
+            elif re.match('-\d+[ACGTN]+', read_base):
                 loc += 1
-                ref = re.sub('\-\d+([ACGT]+)', '\\1', read_base)
+                ref = re.sub('-\d+([ACGTN]+)', '\\1', read_base)
                 alt = ''
                 read_base = ''
 

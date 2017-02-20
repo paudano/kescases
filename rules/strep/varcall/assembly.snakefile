@@ -51,19 +51,23 @@ rule strep_asm_pileup:
     input:
         bam='local/strep/results/{accession}/assemble/contig.bam',
         bai='local/strep/results/{accession}/assemble/contig.bam.bai',
-        interval=config['strep']['pbp_bed']
+        interval=config['strep']['pbp_bed'],
+        ref=STREP_REF
     output:
         pileup='local/strep/results/{accession}/assemble/pileup.tab',
         time='local/strep/results/{accession}/assemble/bm/pileup.time',
         trace='local/strep/results/{accession}/assemble/bm/pileup.trace'
+    log:
+        'local/strep/results/{accession}/assemble/log/mpileup.log'
     shell:
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
         """bin/samtools mpileup """
-            """-f {STREP_REF} """
+            """-f {input.ref} """
             """-l {input.interval} """
             """{input.bam} """
-            """-o {output.pileup}"""
+            """-o {output.pileup} """
+            """>{log} 2>&1"""
 
 # strep_asm_bam_index
 #

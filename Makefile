@@ -1,4 +1,4 @@
-ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/fastq-dump bin/blastn bin/quast.py bin/python2 bin/vcf2tsv
+ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/fastq-dump bin/blastn bin/quast.py bin/python2 bin/vcf2tsv bin/art_illumina
 
 ALL_NONFREE_TARGETS=lib/GenomeAnalysisTK.jar lib/picard.jar
 
@@ -61,6 +61,9 @@ bin/vcf2tsv:
 	cd build/vcflib; git checkout v1.0.0-rc1
 	make -C build/vcflib
 	ln -s ../build/vcflib/bin/vcf2tsv bin/
+
+bin/art_illumina:
+	make -C build/art
 
 .PHONY: clean
 clean:
