@@ -28,7 +28,7 @@ rule ecoli_asm_pileup_to_vcf:
         interval_container = interval.IntervalContainer()
         interval_container.add_bed(input.ref_bed)
 
-        variant_list = pileup.read_pileup_variants(input.pileup, wildcards.accession, interval_container, output.bed)
+        variant_list = pileup.read_pileup_variants(input.pileup, wildcards.accession, interval_container, output.bed, allow_n=False)
         variant.write_vcf(variant_list, wildcards.accession, output.vcf, input.ref)
 
 # ecoli_asm_pileup

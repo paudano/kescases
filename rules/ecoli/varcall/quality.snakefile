@@ -17,8 +17,8 @@ from kescaseslib import variant
 def _merge_variant_data_frames(input):
     """
     :param input: An input object with `input.tp`, `input.fp`, and `input.fn` pointing to the
-        table files extracted from the VCF files (rule `strep_variant_vcf_eval_to_table`), and
-        `input.pbp` pointing to the PBP BED file where genes are listed.
+        table files extracted from the VCF files (rule `ecoli_variant_vcf_eval_to_table`), and
+        `input.ref_bed` pointing to the BED file with a record covering the reference genome.
 
     :return: A merged and sorted dataframe with annotated regions.
     """
@@ -45,15 +45,6 @@ def _merge_variant_data_frames(input):
 
     # Sort
     df = df.sort_values(['CHROM', 'POS'])
-
-    # Annotate by PBP region
-    pbp_interval = interval.IntervalContainer()
-    pbp_interval.add_bed(input.pbp)
-
-    if df.shape[0] > 0:
-        df['REGION'] = df.apply(lambda row: str(pbp_interval.get_interval(row['CHROM'], row['POS'])), axis=1)
-    else:
-        df['REGION'] = pd.Series(dtype=object)
 
     # Return dataframe
     return df
@@ -99,27 +90,27 @@ def _set_filter_and_id(df, filter_container):
     df['ID'] = [str(variant) for variant in var_list]
 
     # Set FILTER
-    df['FILTER'] = [
-        filter_region.tag if filter_region is not None else 'PASS' for filter_region in [
-            filter_container.get_interval(variant.chrom, variant.start, variant.get_end()) for variant in var_list
-        ]
-    ]
+    df['FILTER'] = 'PASS'
+#    df['FILTER'] = [
+#        filter_region.tag if filter_region is not None else 'PASS' for filter_region in [
+#            filter_container.get_interval(variant.chrom, variant.start, variant.get_end()) for variant in var_list
+#        ]
+#    ]
 
 
 #############
 ### Rules ###
 #############
 
-# strep_annotate_variant_calls
+# ecoli_annotate_variant_calls
 #
 # Add ID and FILTER columns.
-rule strep_annotate_variant_calls:
+rule ecoli_annotate_variant_calls:
     input:
-        tab='local/strep/temp/{accession}/{pipeline}/variants_unannotated.tab',
-        nc_bed='local/strep/results/{accession}/assemble/no_consensus.bed',
-        bl_tab='data/strep/NC_003028.blacklist.tab'
+        tab='local/ecoli/temp/{accession}/kestrel/vcfeval/{varset}/variants_unannotated.tab',
+        nc_bed='local/ecoli/results/{accession}/assemble/no_consensus.bed'
     output:
-        tab='local/strep/results/{accession}/{pipeline}/variants.tab'
+        tab='local/ecoli/results/{accession}/{pipeline}/variants_{varset}.tab'
     run:
 
         # Read variants and the blacklist
@@ -128,8 +119,8 @@ rule strep_annotate_variant_calls:
         # Initialize filters
         filter_container = interval.IntervalContainer()
 
-        filter_container.add_bed(input.nc_bed, 'NO_CONSENSUS')
-        filter_container.add_blacklist(input.bl_tab, wildcards.accession)
+        #filter_container.add_bed(input.nc_bed, 'NO_CONSENSUS')
+        #filter_container.add_blacklist(input.bl_tab, wildcards.accession)
 
         # Annotate filter
         _set_filter_and_id(df, filter_container)
@@ -137,66 +128,40 @@ rule strep_annotate_variant_calls:
         # Write
         df.to_csv(output.tab, sep='\t', index=False)
 
-# strep_variant_merge_kestrel_vcf_eval
+# ecoli_variant_merge_kestrel_vcf_eval
 #
 # Merge Kestrel TP, FP, and FN calls annotated by vcfeval. Add a filed for the alignment depth.
-rule strep_variant_merge_kestrel_vcf_eval:
+rule ecoli_variant_merge_kestrel_vcf_eval:
     input:
-        tp='local/strep/temp/{accession}/kestrel/tp.tab',
-        fp='local/strep/temp/{accession}/kestrel/fp.tab',
-        fn='local/strep/temp/{accession}/kestrel/fn.tab',
-        pileup='local/strep/results/{accession}/gatk/pileup.tab',
-        pbp=STREP_PBP_BED
+        tp='local/ecoli/temp/{accession}/kestrel/vcfeval/{varset}/tp.tab',
+        fp='local/ecoli/temp/{accession}/kestrel/vcfeval/{varset}/fp.tab',
+        fn='local/ecoli/temp/{accession}/kestrel/vcfeval/{varset}/fn.tab',
+        ref_bed=ECOLI_REF_BED
     output:
-        tab=temp('local/strep/temp/{accession}/kestrel/variants_unannotated.tab')
+        tab=temp('local/ecoli/temp/{accession}/kestrel/vcfeval/{varset}/variants_unannotated.tab')
     run:
 
         # Get merged variants
         df = _merge_variant_data_frames(input)
 
-        # Annotate alignment depth
-        if df.shape[0] > 0:
-            df['DEPTH'] = _get_depth_column_from_pileup(df, input.pileup)
-        else:
-            df['DEPTH'] = pd.Series({}, dtype=np.int32)
+#        # Annotate alignment depth
+#        if df.shape[0] > 0:
+#            df['DEPTH'] = _get_depth_column_from_pileup(df, input.pileup)
+#        else:
+#            df['DEPTH'] = pd.Series({}, dtype=np.int32)
 
         # Write table
         df.to_csv(output.tab, sep='\t', index=False)
 
-# strep_variant_merge_gatk_vcf_eval
-#
-# Merge GATK TP, FP, and FN calls annotated by vcfeval.
-rule strep_variant_merge_gatk_vcf_eval:
-    input:
-        tp='local/strep/temp/{accession}/gatk/tp.tab',
-        fp='local/strep/temp/{accession}/gatk/fp.tab',
-        fn='local/strep/temp/{accession}/gatk/fn.tab',
-        pileup='local/strep/results/{accession}/gatk/pileup.tab',
-        pbp=STREP_PBP_BED
-    output:
-        tab=('local/strep/temp/{accession}/gatk/variants_unannotated.tab')
-    run:
 
-        # Get merged variants
-        df = _merge_variant_data_frames(input)
-
-        # Annotate alignment depth
-        if df.shape[0] > 0:
-            df['DEPTH'] = _get_depth_column_from_pileup(df, input.pileup)
-        else:
-            df['DEPTH'] = pd.Series({}, dtype=np.int32)
-
-        # Write table
-        df.to_csv(output.tab, sep='\t', index=False)
-
-# strep_variant_vcf_eval_to_table
+# ecoli_variant_vcfeval_to_table
 #
 # Convert compared variants to a table file
-rule strep_variant_vcfeval_to_table:
+rule ecoli_variant_vcfeval_to_table:
     input:
-        vcf='local/strep/results/{accession}/{pipeline}/vcfeval/{call}.vcf.gz',
+        vcf='local/ecoli/results/{accession}/kestrel/vcfeval/{varset}/{call}.vcf.gz',
     output:
-        tab=temp('local/strep/temp/{accession}/{pipeline}/{call}.tab')
+        tab=temp('local/ecoli/temp/{accession}/kestrel/vcfeval/{varset,con|hap}/{call,tp|fp|fn}.tab')
     run:
 
         call_type = wildcards.call.upper()
@@ -210,24 +175,37 @@ rule strep_variant_vcfeval_to_table:
             """> {output.tab}"""
         )
 
-# strep_variant_vcfeval
+# ecoli_variant_vcfeval
 #
 # Compare variants in GATK or Kestrel calls to the assembly calls.
-rule strep_variant_vcfeval:
+rule ecoli_variant_vcfeval:
     input:
-        vcf='local/strep/results/{accession}/{pipeline}/variants.vcf.gz',
-        base_vcf='local/strep/results/{accession}/assemble/variants.vcf.gz',
-        ref=STREP_REF,
-        pbp=STREP_PBP_BED,
-        rtg_flag=STREP_RTG_INDEX_FLAG
+        vcf='local/ecoli/results/{accession}/kestrel/variants.vcf.gz',
+        base_vcf='local/ecoli/results/{accession}/assemble/variants.vcf.gz',
+        ref=ECOLI_REF,
+        rtg_flag=ECOLI_RTG_INDEX_FLAG,
+        con_bed='local/ecoli/results/{accession}/kestrel/consensus_regions.bed',
+        hap_bed='local/ecoli/results/{accession}/kestrel/haplotypes.bed'
     output:
-        tp='local/strep/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/tp.vcf.gz',
-        fp='local/strep/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/fp.vcf.gz',
-        fn='local/strep/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/fn.vcf.gz',
-        baseline='local/strep/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/tp-baseline.vcf.gz'
+        tp='local/ecoli/results/{accession}/kestrel/vcfeval/{varset,con|hap}/tp.vcf.gz',
+        fp='local/ecoli/results/{accession}/kestrel/vcfeval/{varset,con|hap}/fp.vcf.gz',
+        fn='local/ecoli/results/{accession}/kestrel/vcfeval/{varset,con|hap}/fn.vcf.gz',
+        bl='local/ecoli/results/{accession}/kestrel/vcfeval/{varset,con|hap}/tp-baseline.vcf.gz'
     log:
-        'local/strep/results/{accession}/{pipeline}/log/strep_variant_vcfeval.log'
+        'local/ecoli/results/{accession}/kestrel/log/kestrel_variant_vcfeval_{varset}.log'
     run:
+
+        # Get regions based varset wildcard
+        if wildcards.varset == 'con':
+            bed_regions = input.con_bed
+
+        elif wildcards.varset == 'hap':
+            bed_regions = input.hap_bed
+
+        else:
+            raise RuntimeError('Unrecognized variant set for vcfeval: {}'.format(wildcards.varset))
+
+        # Run vcfeval
         if kesutil.has_uncommented_lines(input.base_vcf):
             shell(
                 """rm -rf $(dirname {output.tp}); """
@@ -235,14 +213,26 @@ rule strep_variant_vcfeval:
                     """-t $(dirname {input.rtg_flag}) """
                     """-b {input.base_vcf} """
                     """-c {input.vcf} """
+                    """--bed-regions={bed_regions} """
                     """-o $(dirname {output.tp}) """
-                    """--bed-regions {input.pbp} """
                     """>{log} 2>&1"""
             )
         else:
             shell(
                 """cp {input.base_vcf} {output.fn}; """
-                """cp {input.base_vcf} {output.baseline}; """
+                """cp {input.base_vcf} {output.bl}; """
                 """cp {input.vcf} {output.tp}; """
                 """cp {input.vcf} {output.fp}"""
             )
+
+# ecoli_variant_get_haplotype_regions
+#
+# Get regions where haplotypes were generated.
+rule ecoli_variant_get_haplotype_regions:
+    input:
+        bam='local/ecoli/results/{accession}/kestrel/haplotypes.bam'
+    output:
+        bed='local/ecoli/results/{accession}/kestrel/haplotypes.bed'
+    shell:
+        """bamToBed -i {input.bam} | """
+        """bedtools merge > {output.bed}"""

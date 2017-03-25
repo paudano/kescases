@@ -44,6 +44,20 @@ for tool_name in config['tools']:
 STREP_REGIONS = bedreader.bed_interval_to_dataframe(config['strep']['pbp_bed'])
 
 
+### Read Seeds for Reproducible "Random" Events ###
+
+SEED_LIST = list()
+
+with open(config['rand_seed'], 'r') as in_file:
+    for line in in_file:
+        line = line.strip()
+
+        if not line:
+            continue
+
+        SEED_LIST.append(int(line))
+
+
 #############
 ### Rules ###
 #############

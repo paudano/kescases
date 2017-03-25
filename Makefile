@@ -1,4 +1,4 @@
-ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/fastq-dump bin/blastn bin/quast.py bin/python2 bin/vcf2tsv bin/art_illumina
+ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/python bin/snakemake bin/tabix bin/rtg bin/fastq-dump bin/blastn bin/quast.py bin/python2 bin/vcf2tsv bin/art_illumina bin/bedtools bin/bamToBed
 
 ALL_NONFREE_TARGETS=lib/GenomeAnalysisTK.jar lib/picard.jar
 
@@ -64,6 +64,11 @@ bin/vcf2tsv:
 
 bin/art_illumina:
 	make -C build/art
+
+bin/bedtools bin/bamToBed:
+	make -C build/bedtools
+	ln -sf ../build/bedtools/bedtools2/bin/bedtools bin/
+	ln -sf ../build/bedtools/bedtools2/bin/bamToBed bin/
 
 .PHONY: clean
 clean:

@@ -56,7 +56,7 @@ rule strep_kestrel_make_ikc:
         """mkdir -p local/strep/temp/{wildcards.accession}/kanalyze; """
         """bin/time -p -o {output.time} """
         """bin/traceproc -o {output.trace} """
-        """java -Xmx3G -jar {tools.kanalyze} """
+        """java -Xmx8G -jar {tools.kanalyze} """
             """count """
             """-k 31 """
             """--countfilter=kmercount:5 """
