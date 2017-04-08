@@ -53,6 +53,9 @@ def _strep_get_all_sample_file_names(wildcards):
 #
 
 
+# strep_count_reads_and_bases
+#
+# Count the number of reads and bases in each sample.
 rule strep_count_reads_and_bases:
     input:
         fq=_strep_get_all_sample_file_names

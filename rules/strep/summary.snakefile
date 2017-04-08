@@ -3,7 +3,8 @@ Rules to generate plots and summaries for the Strep project
 """
 
 import os
-import pandas
+import pandas as pd
+import numpy as np
 
 
 ###################
@@ -89,6 +90,42 @@ rule strep_phylogeny_serotype:
 # Benchmark plots
 #
 
+# strep_summary_bm_runtime_box_plot_by_reads
+#
+# Make runtime boxplots with CPU time divided by millions of reads.
+rule strep_summary_bm_runtime_box_plot_by_reads:
+    input:
+        tab_kes='local/strep/temp/benchmarks/kestrel_runtime_withreads.tab',
+        tab_gatk='local/strep/temp/benchmarks/gatk_runtime_withreads.tab',
+        tab_asm='local/strep/temp/benchmarks/assemble_runtime_withreads.tab'
+    output:
+        pdf_all='local/strep/summary/plots/bm/rt/runtime_cpu_by_reads.pdf',
+        pdf_noasm='local/strep/summary/plots/bm/rt/runtime_cpu_noasm_by_reads.pdf',
+        pdf_all_multi='local/strep/summary/plots/bm/rt/multipart/runtime_cpu_by_reads.pdf',
+        pdf_noasm_multi='local/strep/summary/plots/bm/rt/multipart/runtime_cpu_noasm_by_reads.pdf'
+    shell:
+        """Rscript scripts/plots/runtime_box_plot_by_reads.R {input.tab_kes} {input.tab_gatk} {input.tab_asm} {output.pdf_all} {output.pdf_noasm} {output.pdf_all_multi} {output.pdf_noasm_multi}"""
+
+# strep_summary_runtime_with_reads
+#
+# Merge runtime and file size tables.
+rule strep_summary_runtime_with_reads:
+    input:
+        tab_rt='local/strep/summary/benchmarks/{pipeline}_runtime.tab',
+        tab_file='local/strep/summary/benchmarks/seq_file_size.tab'
+    output:
+        tab='local/strep/temp/benchmarks/{pipeline}_runtime_withreads.tab'
+    run:
+
+        # Read
+        pd.concat(
+            [
+                pd.read_table(input.tab_rt, header=0, index_col=0),
+                pd.read_table(input.tab_file, header=0, index_col=0)
+            ],
+            axis=1
+        ).to_csv(output.tab, sep='\t', index=True, index_label='accession')
+
 # strep_summary_bm_runtime_box_plot
 #
 # Make a boxplot of run times.
@@ -98,12 +135,10 @@ rule strep_summary_bm_runtime_box_plot:
         tab_gatk='local/strep/summary/benchmarks/gatk_runtime.tab',
         tab_asm='local/strep/summary/benchmarks/assemble_runtime.tab'
     output:
-        pdf_cpu_all='local/strep/summary/plots/bm/runtime_cpu.pdf',
-        pdf_real_all='local/strep/summary/plots/bm/runtime_real.pdf',
-        pdf_cpu_noasm='local/strep/summary/plots/bm/runtime_cpu_noasm.pdf',
-        pdf_real_noasm='local/strep/summary/plots/bm/runtime_real_noasm.pdf'
+        pdf_cpu_all='local/strep/summary/plots/bm/rt/runtime_cpu.pdf',
+        pdf_cpu_noasm='local/strep/summary/plots/bm/rt/runtime_cpu_noasm.pdf',
     shell:
-        """Rscript scripts/plots/runtime_box_plot.R {input.tab_kes} {input.tab_gatk} {input.tab_asm} local/strep/summary/plots/bm/runtime"""
+        """Rscript scripts/plots/runtime_box_plot.R {input.tab_kes} {input.tab_gatk} {input.tab_asm} {output.pdf_cpu_all} {output.pdf_cpu_noasm}"""
 
 # strep_summary_bm_mem_box_plot
 #
@@ -114,26 +149,139 @@ rule strep_summary_bm_mem_box_plot:
         tab_gatk='local/strep/summary/benchmarks/gatk_trace.tab',
         tab_asm='local/strep/summary/benchmarks/assemble_trace.tab'
     output:
-        pdf='local/strep/summary/plots/bm/memory_trace_bm.pdf',
-        eps='local/strep/summary/plots/bm/memory_trace_bm.eps',
-        rdata='local/strep/summary/plots/bm/memory_trace_bm.RData'
+        pdf='local/strep/summary/plots/bm/mem/memory_trace_bm.pdf'
     shell:
-        """Rscript scripts/plots/memory_box_plot.R {input.tab_kes} {input.tab_gatk} {input.tab_asm} local/strep/summary/plots/bm/memory_trace_bm"""
+        """Rscript scripts/plots/memory_box_plot.R {input.tab_kes} {input.tab_gatk} {input.tab_asm} {output.pdf}"""
 
+# strep_summary_bam_vs_ikc_size
+#
+# BAM vs IKC size plot.
 rule strep_summary_bam_vs_ikc_size:
     input:
         size_tab='local/strep/summary/benchmarks/seq_file_size.tab',
         blacklist='data/strep/NC_003028.blacklist.tab'
     output:
         pdf='local/strep/summary/plots/size/size_bam_vs_ikc.pdf',
-        eps='local/strep/summary/plots/size/size_bam_vs_ikc.eps',
-        rdata='local/strep/summary/plots/size/size_bam_vs_ikc.RData'
+        pdf_multi='local/strep/summary/plots/size/multipart/size_bam_vs_ikc.pdf',
     shell:
-        """Rscript scripts/plots/bam_vs_ikc_file_size.R {input.size_tab} {input.blacklist} local/strep/summary/plots/size/size_bam_vs_ikc"""
+        """Rscript scripts/plots/bam_vs_ikc_file_size.R {input.size_tab} {input.blacklist} {output.pdf} {output.pdf_multi}"""
+
 
 #
 # Benchmark tables
 #
+
+# strep_summary_filesize
+#
+# Get file size summary.
+rule strep_summary_filesize:
+    input:
+        tab='local/strep/summary/benchmarks/seq_file_size.tab'
+    output:
+        tab='local/strep/summary/benchmarks/seq_file_size_summary.tab'
+    run:
+
+        # Read table
+        df = pd.read_table(input.tab, header=0, index_col=0)
+
+        # Get stats
+        stat_mean = df.apply(np.mean, axis=0)
+        stat_mean.name = 'MEAN'
+
+        stat_median = df.apply(np.mean, axis=0)
+        stat_median.name = 'MED'
+
+        stat_sd = df.apply(np.std, axis=0)
+        stat_sd.name = 'SD'
+
+        # Merge stats
+        df_stat = pd.concat(
+            [stat_mean, stat_median, stat_sd],
+            axis=1
+        )
+
+        # Write
+        df_stat.to_csv(output.tab, sep='\t', index=True, index_label='STAT', float_format='%.2f')
+
+# strep_summary_runtime_by_reads
+#
+# Get runtime performance by number of reads.
+rule strep_summary_runtime_by_reads:
+    input:
+        tab_rt='local/strep/summary/benchmarks/{pipeline}_runtime.tab',
+        tab_reads='local/strep/samples/sample_seq_summary.tab'
+    output:
+        tab='local/strep/summary/benchmarks/{pipeline}_runtime_summary_byreads.tab'
+    run:
+
+        # Read
+        rt = pd.read_table(input.tab_rt, header=0, index_col=0)['user']
+        size = pd.read_table(input.tab_reads, header=0, index_col=0)
+
+        # Get stats
+        rt_reads = rt / size['reads'] * 1e6
+        rt_reads.name = 'byread'
+
+        rt_bases = rt / size['bases'] * 1e6
+        rt_bases.name = 'bybase'
+
+        # Merge
+        df_sample = pd.concat(
+            [rt_reads, rt_bases],
+            axis=1
+        )
+
+        # Get stats
+        stat_mean = df_sample.apply(np.mean, axis=0)
+        stat_mean.name = 'MEAN'
+
+        stat_median = df_sample.apply(np.median, axis=0)
+        stat_median.name = 'MED'
+
+        stat_sd = df_sample.apply(np.std, axis=0)
+        stat_sd.name = 'SD'
+
+        # Merge stats
+        df_stat = pd.concat(
+            [stat_mean, stat_median, stat_sd],
+            axis=1
+        )
+
+        # Write
+        df_stat.to_csv(output.tab, sep='\t', index=True, index_label='STAT', float_format='%.2f')
+
+# strep_summary_summarize_bm
+#
+# Summarize benchmark statistics (trace and runtime).
+rule strep_summary_summarize_runtime:
+    input:
+        tab='local/strep/summary/benchmarks/{pipeline}_{stat}.tab'
+    output:
+        tab='local/strep/summary/benchmarks/{pipeline}_{stat}_summary.tab'
+    run:
+
+        # Read
+        df = pd.read_table(input.tab, header=0, index_col=0)
+
+        # Get stats
+        stat_mean = df.apply(np.mean, axis=0)
+        stat_mean.name = 'MEAN'
+
+        stat_median = df.apply(np.median, axis=0)
+        stat_median.name = 'MED'
+
+        stat_sd = df.apply(np.std, axis=0)
+        stat_sd.name = 'SD'
+
+        # Merge
+        df_stat = pd.concat(
+            [stat_mean, stat_median, stat_sd],
+            axis=1
+        )
+
+        # Write
+        df_stat.to_csv(output.tab, sep='\t', index=True, index_label='STAT', float_format='%.2f')
+
 
 # strep_summary_merge_trace_tables
 #
@@ -231,13 +379,10 @@ rule strep_summary_make_variant_jitter_plots:
     input:
         tab='local/strep/summary/{pipeline}/variants.tab'
     output:
-        all_pdf='local/strep/summary/plots/varjitter/{pipeline}_variant_jitter_all.pdf',
-        all_eps='local/strep/summary/plots/varjitter/{pipeline}_variant_jitter_all.eps',
-        lc_pdf='local/strep/summary/plots/varjitter/{pipeline}_variant_jitter_lc.pdf',
-        lc_eps='local/strep/summary/plots/varjitter/{pipeline}_variant_jitter_lc.eps',
-        rdata='local/strep/summary/plots/varjitter/{pipeline}_variant_jitter.RData'
+        pdf='local/strep/summary/plots/varjitter/{pipeline}_variant_jitter_all.pdf',
+        pdf_multi='local/strep/summary/plots/varjitter/multipart/{pipeline}_variant_jitter_all.pdf'
     shell:
-        """Rscript scripts/plots/variant_jitter.R {wildcards.pipeline} {input.tab} local/strep/summary/plots/varjitter/{wildcards.pipeline}_variant_jitter"""
+        """Rscript scripts/plots/variant_jitter.R {wildcards.pipeline} {input.tab} {output.pdf} {output.pdf_multi} {wildcards.pipeline}"""
 
 #
 # Merge variant calls from all samples

@@ -11,7 +11,7 @@ args = commandArgs(trailingOnly=TRUE)
 table.kes.name = args[1]
 table.gatk.name = args[2]
 table.asm.name = args[3]
-out.base.name = args[4]
+out.name = args[4]
 
 # Read tables
 df.mem.kes <- read.table(table.kes.name, header=TRUE)
@@ -39,7 +39,4 @@ plot.mem <- ggplot(df.mem, aes(pipeline, rss)) +
     theme(axis.text.x=element_text(size=16, color="black"), axis.text.y=element_text(size=12, color="black"))
 
 # Write
-ggsave(paste(out.base.name, ".pdf", sep=""), plot.mem, height=5.5, width=5.5, units="in")
-ggsave(paste(out.base.name, ".eps", sep=""), plot.mem, dev=cairo_ps, height=5.5, width=5.5, units="in")
-
-save(plot.mem, file=paste(out.base.name, ".RData", sep=""))
+ggsave(out.name, plot.mem, height=5.5, width=5.5, units="in")

@@ -162,7 +162,7 @@ rule ecoli_compress_simulated_reads:
 # Simulate reads from assemblies for variant-calling by Kestrel.
 rule ecoli_kestrel_simulate_reads:
     input:
-        scaffolds='local/ecoli/temp/{accession}/kestrel/reads/scaffolds.fa'
+        contigs='local/ecoli/temp/{accession}/kestrel/reads/contigs.fa'
     output:
         fq_1=temp('local/ecoli/temp/{accession}/kestrel/reads/simulated_reads1.fq'),
         fq_2=temp('local/ecoli/temp/{accession}/kestrel/reads/simulated_reads2.fq'),
@@ -174,15 +174,15 @@ rule ecoli_kestrel_simulate_reads:
     log:
         'local/ecoli/results/{accession}/kestrel/log/simulated_reads.log'
     shell:
-        """bin/art_illumina -sam -i {input.scaffolds} -rs {params.seed} -p -l 150 -ss HS25 -f 30 -m 200 -s 10 -o local/ecoli/temp/{wildcards.accession}/kestrel/reads/simulated_reads >{log} 2>&1"""
+        """bin/art_illumina -sam -i {input.contigs} -rs {params.seed} -p -l 150 -ss HS25 -f 30 -m 200 -s 10 -o local/ecoli/temp/{wildcards.accession}/kestrel/reads/simulated_reads >{log} 2>&1"""
 
-# ecoli_kestrel_uncompress_scaffolds
+# ecoli_kestrel_uncompress_contigs
 #
-# Uncompress scaffolds for art_illumina
-rule ecoli_kestrel_uncompress_scaffolds:
+# Uncompress contigs for art_illumina
+rule ecoli_kestrel_uncompress_contigs:
     input:
-        scaffolds='local/ecoli/samples/{accession}.scaffolds_min500bp.fa.gz'
+        contigs='local/ecoli/samples/{accession}.fa.gz'
     output:
-        scaffolds=temp('local/ecoli/temp/{accession}/kestrel/reads/scaffolds.fa')
+        contigs=temp('local/ecoli/temp/{accession}/kestrel/reads/contigs.fa')
     shell:
-        """gunzip -c {input.scaffolds} > {output.scaffolds}"""
+        """gunzip -c {input.contigs} > {output.contigs}"""

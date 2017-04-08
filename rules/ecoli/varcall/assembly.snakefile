@@ -96,7 +96,7 @@ rule ecoli_asm_sort_sam:
 # Align assembled contigs to a reference.
 rule ecoli_asm_align:
     input:
-        scaffolds='local/ecoli/samples/{accession}.scaffolds_min500bp.fa.gz',
+        contigs='local/ecoli/samples/{accession}.fa.gz',
         ref=ECOLI_REF,
         index=ECOLI_BWA_INDEX_LIST
     output:
@@ -113,6 +113,6 @@ rule ecoli_asm_align:
             """-L 1000,1000 """
             """-R "@RG\\tID:Ecoli-{wildcards.accession}\\tSM:{wildcards.accession}" """
             """{input.ref} """
-            """{input.scaffolds} """
+            """{input.contigs} """
             """> {output.sam} """
             """2>{log}"""

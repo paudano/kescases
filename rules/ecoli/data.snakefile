@@ -102,3 +102,29 @@ rule ecoli_cp_reference:
         ref=ECOLI_REF
     shell:
         """gunzip -c {input.ref} > {output.ref}"""
+
+
+#
+# Contigs
+#
+
+# ecoli_data_uncompress_contigs
+#
+# Uncompress contigs
+rule ecoli_data_uncompress_contigs:
+    input:
+        tar_gz='local/strep/temp/data/Dataset_S7.tar.gz'
+    output:
+        fa_gz=expand('local/ecoli/samples/{accession}.fa.gz', accession=ECOLI_ACCESSIONS)
+    run:
+        for accession in ECOLI_ACCESSIONS:
+            shell("""tar -Ozxf {input.tar_gz} Supplement_S7/{accession}.scaffolds_min500bp.fa | gzip > {output.fa_gz}""")
+
+# ecoli_data_dl_contigs
+#
+# Get contigs.
+rule ecoli_data_dl_contigs:
+    output:
+        tar_gz=temp('local/strep/temp/data/Dataset_S7.tar.gz')
+    shell:
+        """wget -O {output.tar_gz} http://genome.cshlp.org/content/suppl/2014/11/11/gr.180190.114.DC1/Dataset_S7.tar.gz"""

@@ -2,6 +2,8 @@
 Master snakefile for the E. coli pipeline.
 """
 
+localrules: ecoli_fetch
+
 
 ###################
 ### Definitions ###
@@ -28,3 +30,18 @@ include: 'data.snakefile'
 include: 'varcall/assembly.snakefile'
 include: 'varcall/kestrel.snakefile'
 include: 'varcall/quality.snakefile'
+include: 'summary.snakefile'
+
+
+#############
+### Rules ###
+#############
+
+# ecoli_fetch
+#
+# Download E. coli data.
+rule ecoli_fetch:
+    input:
+        fa_gz=expand('local/ecoli/samples/{accession}.fa.gz', accession=ECOLI_ACCESSIONS)
+    run:
+        pass
