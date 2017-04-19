@@ -45,9 +45,32 @@ def _mlst_get_match_series(accession):
 #############
 
 #
-# Merge MLST results from both callers
+# Rules for building MLST.
 #
 
+# mlst_tables
+#
+# Make MLST summary tables.
+rule mlst_tables:
+    input:
+        'local/mlst/summary/mlst_summary.tab'
+
+# mlst_fetch
+#
+# Fetch MLST data.
+rule mlst_fetch:
+    input:
+        expand('local/mlst/samples/{accession}/{accession}_1.fastq.gz', accession=MLST_ACCESSIONS),
+        expand('local/mlst/samples/{accession}/{accession}_2.fastq.gz', accession=MLST_ACCESSIONS)
+
+
+#
+# Summary tables
+#
+
+# mlst_summary_table
+#
+# Summarize MLST calls.
 rule mlst_summary_table:
     input:
         tab=expand('local/mlst/results/{accession}/mlst_merged_calls.tab', accession=MLST_ACCESSIONS)

@@ -205,7 +205,7 @@ upec-237
 upec-238
 upec-239
 upec-23
-upec-240
+#upec-240  # Missing contigs
 upec-243
 upec-244
 upec-248
@@ -263,7 +263,7 @@ upec-48
 upec-4
 upec-50
 upec-51
-upec-52
+#upec-52  # Missing contigs
 upec-53
 upec-54
 upec-55
@@ -308,5 +308,6 @@ upec-94
 upec-95
 upec-97
 upec-98
-upec-9
+#upec-9	 # RTG vcfeval crash
 upec-99
+

@@ -16,7 +16,7 @@ def read_pileup_variants(pileup_file_name, sample_name, interval_container, no_c
     :param interval_container: Interval container.
     :param no_call_bed: BED file of regions where variants could not be called (BED4) or `None` if no
         file should be written.
-    :param allow_n: Allow a variant to contain "N" in the reference if `True`.
+    :param allow_n: Allow a variant to contain "N" in the reference or alternate sequence if `True`.
 
     :return: A list of variants.
     """
@@ -168,7 +168,7 @@ def read_pileup_variants(pileup_file_name, sample_name, interval_container, no_c
                                    .format(pileup_file_name, line_count, read_base_org))
 
             # Skip N in reference if disabled.
-            if not allow_n and 'N' in ref.upper():
+            if not allow_n and ('N' in ref.upper() or 'N' in alt.upper()):
                 continue
 
             # Append variant

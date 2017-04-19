@@ -108,17 +108,16 @@ rule ecoli_cp_reference:
 # Contigs
 #
 
-# ecoli_data_uncompress_contigs
+# ecoli_data_extract_contigs
 #
-# Uncompress contigs
-rule ecoli_data_uncompress_contigs:
+# Compress contigs
+rule ecoli_data_extract_contigs:
     input:
         tar_gz='local/strep/temp/data/Dataset_S7.tar.gz'
     output:
-        fa_gz=expand('local/ecoli/samples/{accession}.fa.gz', accession=ECOLI_ACCESSIONS)
+        fa_gz='local/ecoli/samples/{accession}.fa.gz'
     run:
-        for accession in ECOLI_ACCESSIONS:
-            shell("""tar -Ozxf {input.tar_gz} Supplement_S7/{accession}.scaffolds_min500bp.fa | gzip > {output.fa_gz}""")
+        shell("""tar -Ozxf {input.tar_gz} Supplement_S7/{wildcards.accession}.scaffolds_min500bp.fa | gzip > {output.fa_gz}""")
 
 # ecoli_data_dl_contigs
 #

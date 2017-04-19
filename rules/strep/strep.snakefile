@@ -24,25 +24,6 @@ with open(config['strep']['accessions'], 'r') as in_file:
 STREP_INTERVAL_CONTAINER = interval.IntervalContainer()
 STREP_INTERVAL_CONTAINER.add_bed(config['strep']['pbp_bed'])
 
-STREP_ALL_NOFIGURES = [
-    'local/strep/summary/benchmarks/ikc_segment_size.tab',
-    'local/strep/summary/benchmarks/kestrel_runtime.tab',
-    'local/strep/summary/benchmarks/gatk_runtime.tab',
-    'local/strep/summary/benchmarks/assemble_runtime.tab',
-    'local/strep/summary/benchmarks/kestrel_trace.tab',
-    'local/strep/summary/benchmarks/gatk_trace.tab',
-    'local/strep/summary/benchmarks/assemble_trace.tab'
-]
-
-STREP_ALL_FIGURES = [
-    'local/strep/summary/plots/bm/memory_trace_bm.pdf',
-    'local/strep/summary/plots/bm/runtime_cpu.pdf',
-    'local/strep/summary/plots/bm/runtime_cpu_noasm.pdf',
-    'local/strep/summary/plots/phylo/phylo_variant.pdf',
-    'local/strep/summary/plots/phylo/phylo_sero.pdf'
-]
-
-STREP_ALL = STREP_ALL_NOFIGURES + STREP_ALL_FIGURES
 
 ###############
 ### Include ###
@@ -62,11 +43,52 @@ include: 'ani.snakefile'
 ### Rules ###
 #############
 
-rule strep_all_nofigures:
-    input: STREP_ALL_NOFIGURES
+# strep_figures
+#
+# Make strep figures.
+rule strep_figures:
+    input:
+        'local/strep/summary/plots/bm/rt/runtime_cpu_by_reads.pdf',
+        'local/strep/summary/plots/bm/rt/runtime_cpu_noasm_by_reads.pdf',
+        'local/strep/summary/plots/bm/phylo/phylo_sero.pdf',
+        'local/strep/summary/plots/bm/phylo/phylo_variant.pdf',
+        'local/strep/summary/plots/bm/size/size_bam_vs_ikc.pdf',
+        'local/strep/summary/plots/bm/size/size_ikc_bam_by_reads.pdf',
+        'local/strep/summary/plots/bm/varjitter/gatk_variant_jitter_all.pdf',
+        'local/strep/summary/plots/bm/varjitter/kestrel_variant_jitter_all.pdf'
 
-rule strep_all_figures:
-    input: STREP_ALL_FIGURES
+# strep_tables
+#
+# Get Strep results tables.
+rule strep_tables:
+    input:
+        'local/strep/summary/kestrel/quality/summary_stats.tab',
+        'local/strep/summary/kestrel/variants.tab',
+        'local/strep/summary/kestrel/variants_removed.tab',
+        'local/strep/summary/gatk/quality/summary_stats.tab',
+        'local/strep/summary/gatk/variants.tab',
+        'local/strep/summary/gatk/variants_removed.tab',
+        'local/strep/summary/benchmarks/assemble_runtime.tab',
+        'local/strep/summary/benchmarks/assemble_runtime_summary_byreads.tab',
+        'local/strep/summary/benchmarks/assemble_trace.tab',
+        'local/strep/summary/benchmarks/gatk_runtime.tab',
+        'local/strep/summary/benchmarks/gatk_runtime_summary.tab',
+        'local/strep/summary/benchmarks/gatk_runtime_summary_byreads.tab',
+        'local/strep/summary/benchmarks/gatk_trace.tab',
+        'local/strep/summary/benchmarks/gatk_trace_summary.tab',
+        'local/strep/summary/benchmarks/kestrel_runtime_summary.tab',
+        'local/strep/summary/benchmarks/kestrel_runtime_summary_byreads.tab',
+        'local/strep/summary/benchmarks/kestrel_trace.tab',
+        'local/strep/summary/benchmarks/kestrel_trace_summary.tab',
+        'local/strep/summary/benchmarks/seq_file_size.tab',
+        'local/strep/summary/benchmarks/seq_file_size_summary.tab'
 
-rule strep_all:
-    input: STREP_ALL
+
+# strep_fetch
+#
+# Fetch Strep data.
+rule strep_fetch:
+    input:
+        expand('local/strep/samples/{accession}/{accession}_1.fastq.gz', accession=STREP_ACCESSIONS),
+        expand('local/strep/samples/{accession}/{accession}_2.fastq.gz', accession=STREP_ACCESSIONS)
+

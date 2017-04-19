@@ -5,6 +5,11 @@ Rules to summarize data.
 import pandas as pd
 import numpy as np
 
+
+#
+# Plot
+#
+
 # ecoli_summary_plot_consensus_size
 #
 # Make consensus size distribution histogram.

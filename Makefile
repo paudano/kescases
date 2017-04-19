@@ -2,6 +2,10 @@ ALL_FREE_TARGETS=bin/time bin/traceproc bin/bwa bin/samtools bin/spades.py bin/p
 
 ALL_NONFREE_TARGETS=lib/GenomeAnalysisTK.jar lib/picard.jar
 
+# Site-specific make rules
+-include local/build.mk
+
+
 .PHONY: all
 all: $(ALL_NONFREE_TARGETS) $(ALL_FREE_TARGETS)
 
