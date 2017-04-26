@@ -41,6 +41,7 @@ bin/tabix:
 
 bin/python bin/python2:
 	make -C build/miniconda ../../bin/python
+	make -C build/miniconda ../../bin/python2
 
 bin/snakemake:
 	make -C build/miniconda ../../bin/snakemake
