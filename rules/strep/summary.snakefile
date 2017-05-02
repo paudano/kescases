@@ -194,9 +194,15 @@ rule strep_summary_filesize:
         stat_sd = df.apply(np.std, axis=0)
         stat_sd.name = 'SD'
 
+        stat_min = df.apply(np.min, axis=0)
+        stat_min.name = 'MIN'
+
+        stat_max = df.apply(np.max, axis=0)
+        stat_max.name = 'MAX'
+
         # Merge stats
         df_stat = pd.concat(
-            [stat_mean, stat_median, stat_sd],
+            [stat_mean, stat_median, stat_sd, stat_min, stat_max],
             axis=1
         )
 
@@ -273,9 +279,15 @@ rule strep_summary_summarize_runtime:
         stat_sd = df.apply(np.std, axis=0)
         stat_sd.name = 'SD'
 
+        stat_min = df.apply(np.min, axis=0)
+        stat_min.name = 'MIN'
+
+        stat_max = df.apply(np.max, axis=0)
+        stat_max.name = 'MAX'
+
         # Merge
         df_stat = pd.concat(
-            [stat_mean, stat_median, stat_sd],
+            [stat_mean, stat_median, stat_sd, stat_min, stat_max],
             axis=1
         )
 

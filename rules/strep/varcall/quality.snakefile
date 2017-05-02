@@ -84,10 +84,12 @@ def _set_filter_and_id(df, filter_container):
     :param filter_container: Interval container with filtered regions loaded. The `tag` field of each
         interval in the container is used to annotated the FILTER column for variants within it. Filters
         are processed in the order they are read.
+
+    :return: Updated data frame.
     """
 
     if df.shape[0] == 0:
-        return
+        return df
 
     # Get list of variants
     var_list = df.apply(
@@ -104,6 +106,8 @@ def _set_filter_and_id(df, filter_container):
             filter_container.get_interval(variant.chrom, variant.start, variant.get_end()) for variant in var_list
         ]
     ]
+
+    return df
 
 
 #############
@@ -132,7 +136,7 @@ rule strep_annotate_variant_calls:
         filter_container.add_blacklist(input.bl_tab, wildcards.accession)
 
         # Annotate filter
-        _set_filter_and_id(df, filter_container)
+        df = _set_filter_and_id(df, filter_container)
 
         # Write
         df.to_csv(output.tab, sep='\t', index=False)

@@ -50,12 +50,13 @@ rule strep_figures:
     input:
         'local/strep/summary/plots/bm/rt/runtime_cpu_by_reads.pdf',
         'local/strep/summary/plots/bm/rt/runtime_cpu_noasm_by_reads.pdf',
-        'local/strep/summary/plots/bm/phylo/phylo_sero.pdf',
-        'local/strep/summary/plots/bm/phylo/phylo_variant.pdf',
-        'local/strep/summary/plots/bm/size/size_bam_vs_ikc.pdf',
-        'local/strep/summary/plots/bm/size/size_ikc_bam_by_reads.pdf',
-        'local/strep/summary/plots/bm/varjitter/gatk_variant_jitter_all.pdf',
-        'local/strep/summary/plots/bm/varjitter/kestrel_variant_jitter_all.pdf'
+        'local/strep/summary/plots/bm/mem/memory_trace_bm.pdf',
+        'local/strep/summary/plots/phylo/phylo_sero.pdf',
+        'local/strep/summary/plots/phylo/phylo_variant.pdf',
+        'local/strep/summary/plots/size/size_bam_vs_ikc.pdf',
+        'local/strep/summary/plots/size/size_ikc_bam_by_reads.pdf',
+        'local/strep/summary/plots/varjitter/gatk_variant_jitter_all.pdf',
+        'local/strep/summary/plots/varjitter/kestrel_variant_jitter_all.pdf'
 
 # strep_tables
 #
@@ -71,6 +72,7 @@ rule strep_tables:
         'local/strep/summary/benchmarks/assemble_runtime.tab',
         'local/strep/summary/benchmarks/assemble_runtime_summary_byreads.tab',
         'local/strep/summary/benchmarks/assemble_trace.tab',
+        'local/strep/summary/benchmarks/assemble_trace_summary.tab',
         'local/strep/summary/benchmarks/gatk_runtime.tab',
         'local/strep/summary/benchmarks/gatk_runtime_summary.tab',
         'local/strep/summary/benchmarks/gatk_runtime_summary_byreads.tab',
@@ -81,7 +83,8 @@ rule strep_tables:
         'local/strep/summary/benchmarks/kestrel_trace.tab',
         'local/strep/summary/benchmarks/kestrel_trace_summary.tab',
         'local/strep/summary/benchmarks/seq_file_size.tab',
-        'local/strep/summary/benchmarks/seq_file_size_summary.tab'
+        'local/strep/summary/benchmarks/seq_file_size_summary.tab',
+        'local/strep/ani/ani_tables/ANIm_percentage_identity.tab'
 
 
 # strep_fetch

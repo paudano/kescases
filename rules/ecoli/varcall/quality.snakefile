@@ -14,7 +14,7 @@ from kescaseslib import variant
 ### Functions ###
 #################
 
-def _merge_variant_data_frames(input):
+def _merge_variant_data_frames_ecoli(input):
     """
     :param input: An input object with `input.tp`, `input.fp`, and `input.fn` pointing to the
         table files extracted from the VCF files (rule `ecoli_variant_vcf_eval_to_table`), and
@@ -49,7 +49,7 @@ def _merge_variant_data_frames(input):
     # Return dataframe
     return df
 
-def _get_depth_column_from_pileup(df, pileup_file_name):
+def _get_depth_column_from_pileup_ecoli(df, pileup_file_name):
     """
     Get a columns for `df` that contains the alignment depth at each locus.
 
@@ -67,7 +67,7 @@ def _get_depth_column_from_pileup(df, pileup_file_name):
 
     return df.apply(lambda row: depth_df[(row['CHROM'], row['POS'])] if (row['CHROM'], row['POS']) in depth_df else 0, axis=1)
 
-def _set_filter_and_id(df, filter_container):
+def _set_filter_and_id_ecoli(df, filter_container):
     """
     Set the FILTER and ID fields in a dataframe of variants.
 
@@ -75,10 +75,12 @@ def _set_filter_and_id(df, filter_container):
     :param filter_container: Interval container with filtered regions loaded. The `tag` field of each
         interval in the container is used to annotated the FILTER column for variants within it. Filters
         are processed in the order they are read.
+
+    :return: Updated data frame.
     """
 
     if df.shape[0] == 0:
-        return
+        return df
 
     # Get list of variants
     var_list = df.apply(
@@ -96,6 +98,8 @@ def _set_filter_and_id(df, filter_container):
 #            filter_container.get_interval(variant.chrom, variant.start, variant.get_end()) for variant in var_list
 #        ]
 #    ]
+
+    return df
 
 
 #############
@@ -123,7 +127,7 @@ rule ecoli_annotate_variant_calls:
         #filter_container.add_blacklist(input.bl_tab, wildcards.accession)
 
         # Annotate filter
-        _set_filter_and_id(df, filter_container)
+        df = _set_filter_and_id_ecoli(df, filter_container)
 
         # Write
         df.to_csv(output.tab, sep='\t', index=False)
@@ -142,11 +146,11 @@ rule ecoli_variant_merge_kestrel_vcf_eval:
     run:
 
         # Get merged variants
-        df = _merge_variant_data_frames(input)
+        df = _merge_variant_data_frames_ecoli(input)
 
 #        # Annotate alignment depth
 #        if df.shape[0] > 0:
-#            df['DEPTH'] = _get_depth_column_from_pileup(df, input.pileup)
+#            df['DEPTH'] = _get_depth_column_from_pileup_ecoli(df, input.pileup)
 #        else:
 #            df['DEPTH'] = pd.Series({}, dtype=np.int32)
 
