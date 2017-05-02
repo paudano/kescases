@@ -1,0 +1,48 @@
+The pipeline contained runs the Kestrel test pipeline from downloading data to all figures and tables used in the manuscript.
+
+
+### Install Software ###
+
+The software required is automatically downloaded and installed to a local directory.
+
+Two programs cannot be installed in an automated way, Picard and GATK. To install these, copy or link the JAR files to "lib". See "lib/NOTES" for more information.
+
+Once GATK and Picard are in "lib", build the remaining programs:
+
+$ make
+
+To build all freely available programs and skip the check for GATK and Picard, run:
+
+$ make allfree
+
+Note that R is not currently installed automatically. To generate plots, an R installation with ggplot2, reshape2, and ciclize packages must be installed.
+
+
+### Set Environment ###
+
+Before running any targets, the terminal path must be set to include the bin file in this directory. "setenv.sh" will set it.
+
+$ . setenv.sh
+
+
+### Run Targets ###
+
+Generating results tables for any experiment will run all necessary steps of the pipeline. This includes downloading the data, running each approach on the data, and summarizing results. All results will go into "local", which is ignored by the git repository.
+
+The table targets:
+* strep_tables
+* ecoli_tables
+* mlst_tables
+
+For example, to run the strep test case:
+$ snakemake strep_tables
+
+There is also a "strep_figures" target to generate figures.
+
+The output location for the table target for each pipeline is:
+* local/strep/summary
+* local/ecoli/summary
+* local/mlst/summary
+
+Any Snakemake targets can then be run by specifying an output file written by the rule. See "Snakemake" and files in "rules" for additional targets.
+
