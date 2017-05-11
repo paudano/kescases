@@ -87,6 +87,21 @@ rule strep_phylogeny_serotype:
 
 
 #
+# Variant Call Depth
+#
+
+# strep_variant_call_depth
+#
+# Plot depth of each variant as annotated by the variant caller vs the alignment depth at the variant locus.
+rule strep_variant_call_depth:
+    input:
+        var_kes='local/strep/summary/{pipeline}/variants.tab'
+    output:
+        pdf_kes='local/strep/summary/plots/variant/variant_depth_{pipeline}.pdf'
+    shell:
+        """Rscript scripts/plots/var_vs_align_depth.R {input.var_kes} {output.pdf_kes} {wildcards.pipeline}"""
+
+#
 # Benchmark plots
 #
 
@@ -149,9 +164,10 @@ rule strep_summary_bm_mem_box_plot:
         tab_gatk='local/strep/summary/benchmarks/gatk_trace.tab',
         tab_asm='local/strep/summary/benchmarks/assemble_trace.tab'
     output:
-        pdf='local/strep/summary/plots/bm/mem/memory_trace_bm.pdf'
+        pdf='local/strep/summary/plots/bm/mem/memory_trace_bm.pdf',
+        pdf_multi='local/strep/summary/plots/bm/mem/multipart/memory_trace_bm.pdf'
     shell:
-        """Rscript scripts/plots/memory_box_plot.R {input.tab_kes} {input.tab_gatk} {input.tab_asm} {output.pdf}"""
+        """Rscript scripts/plots/memory_box_plot.R {input.tab_kes} {input.tab_gatk} {input.tab_asm} {output.pdf} {output.pdf_multi}"""
 
 # strep_summary_bam_vs_ikc_size
 #
