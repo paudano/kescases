@@ -40,6 +40,14 @@ def _mlst_get_match_series(accession):
     return match_series
 
 
+###############
+### Include ###
+###############
+
+include: 'summary.snakefile'
+include: 'benchmarks.snakefile'
+
+
 #############
 ### Rules ###
 #############
@@ -53,7 +61,11 @@ def _mlst_get_match_series(accession):
 # Make MLST summary tables.
 rule mlst_tables:
     input:
-        'local/mlst/summary/mlst_summary.tab'
+        'local/mlst/summary/mlst_summary.tab',
+        'local/mlst/summary/benchmarks/assemble_runtime_summary.tab',
+        'local/mlst/summary/benchmarks/assemble_trace_summary.tab',
+        'local/mlst/summary/benchmarks/kesmlst_runtime_summary.tab',
+        'local/mlst/summary/benchmarks/kesmlst_trace_summary.tab'
 
 # mlst_fetch
 #
@@ -83,8 +95,6 @@ rule mlst_summary_table:
             axis=1
         ).to_csv(output.tab, sep='\t', index_label='Gene')
 
-
-
 # mlst_merge_results
 #
 # Merge results from both pipelines for each sample.
@@ -107,6 +117,8 @@ rule mlst_merge_results:
 
         # Write
         df_merged.to_csv(output.tab, sep='\t', index_label='Gene')
+
+
 #
 # Run MLST with K-mers
 #

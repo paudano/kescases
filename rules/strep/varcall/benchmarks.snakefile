@@ -3,69 +3,7 @@ Merge benchmark data.
 """
 
 import pandas as pd
-
-
-###################
-### Definitions ###
-###################
-
-class RunTime:
-    """
-    Stores runtime (in seconds) output from the time utility.
-    """
-
-    def __init__(self, time_file_name):
-        with open(time_file_name, 'r') as in_file:
-
-            # Read times
-            self.real = float(next(in_file).split(' ')[1])
-            self.user = float(next(in_file).split(' ')[1])
-            self.sys = float(next(in_file).split(' ')[1])
-
-    def to_series(self, series_name):
-        """
-        Get a series from this runtime object.
-
-        :param series_name: Name of this series (the step that generated the run-times).
-        """
-
-        time_series = pd.Series({
-            'real': self.real,
-            'user': self.user,
-            'sys': self.sys,
-        })
-
-        time_series.name = series_name
-
-        return time_series
-
-class MaxMemUsage:
-    """
-    Stores the maximum memory usage per trace.
-    """
-
-    def __init__(self, mem_file_name):
-
-        df = pd.read_table(mem_file_name)
-
-        self.max_rss = max(df['rss_kb'])
-        self.max_vss = max(df['vss_kb'])
-
-    def to_series(self, series_name):
-        """
-        Get a series from this memory usage object.
-
-        :param series_name: Name of this series (the step that consumed the memory).
-        """
-
-        mem_series = pd.Series({
-            'rss': self.max_rss,
-            'vss': self.max_vss
-        })
-
-        mem_series.name = series_name
-
-        return mem_series
+from kescaseslib import bm
 
 
 #############
@@ -92,11 +30,11 @@ rule strep_bm_get_asm_mem:
 
         pd.concat(
             [
-                MaxMemUsage(input.bm_asm).to_series('assemble'),
-                MaxMemUsage(input.bm_align).to_series('align'),
-                MaxMemUsage(input.bm_sort).to_series('sort'),
-                MaxMemUsage(input.bm_index).to_series('index'),
-                MaxMemUsage(input.bm_pileup).to_series('pileup')
+                bm.MaxMemUsage(input.bm_asm).to_series('assemble'),
+                bm.MaxMemUsage(input.bm_align).to_series('align'),
+                bm.MaxMemUsage(input.bm_sort).to_series('sort'),
+                bm.MaxMemUsage(input.bm_index).to_series('index'),
+                bm.MaxMemUsage(input.bm_pileup).to_series('pileup')
             ],
             axis=1
         ).to_csv(output.tab, sep='\t', index=True, index_label='time')
@@ -119,13 +57,13 @@ rule strep_bm_get_gatk_mem:
 
         pd.concat(
             [
-                MaxMemUsage(input.bm_align).to_series('align'),
-                MaxMemUsage(input.bm_sort).to_series('sort'),
-                MaxMemUsage(input.bm_mark).to_series('mark'),
-                MaxMemUsage(input.bm_index).to_series('index'),
-                MaxMemUsage(input.bm_target).to_series('target'),
-                MaxMemUsage(input.bm_realign).to_series('realign'),
-                MaxMemUsage(input.bm_var).to_series('variant')
+                bm.MaxMemUsage(input.bm_align).to_series('align'),
+                bm.MaxMemUsage(input.bm_sort).to_series('sort'),
+                bm.MaxMemUsage(input.bm_mark).to_series('mark'),
+                bm.MaxMemUsage(input.bm_index).to_series('index'),
+                bm.MaxMemUsage(input.bm_target).to_series('target'),
+                bm.MaxMemUsage(input.bm_realign).to_series('realign'),
+                bm.MaxMemUsage(input.bm_var).to_series('variant')
             ],
             axis=1
         ).to_csv(output.tab, sep='\t', index=True, index_label='time')
@@ -143,8 +81,8 @@ rule strep_bm_get_kestrel_mem:
 
         pd.concat(
             [
-                MaxMemUsage(input.bm_table).to_series('table'),
-                MaxMemUsage(input.bm_var).to_series('variant')
+                bm.MaxMemUsage(input.bm_table).to_series('table'),
+                bm.MaxMemUsage(input.bm_var).to_series('variant')
             ],
             axis=1
         ).to_csv(output.tab, sep='\t', index=True, index_label='time')
@@ -170,11 +108,11 @@ rule strep_bm_get_asm_runtime:
 
         pd.concat(
             [
-                RunTime(input.bm_asm).to_series('assemble'),
-                RunTime(input.bm_align).to_series('align'),
-                RunTime(input.bm_sort).to_series('sort'),
-                RunTime(input.bm_index).to_series('index'),
-                RunTime(input.bm_pileup).to_series('pileup')
+                bm.RunTime(input.bm_asm).to_series('assemble'),
+                bm.RunTime(input.bm_align).to_series('align'),
+                bm.RunTime(input.bm_sort).to_series('sort'),
+                bm.RunTime(input.bm_index).to_series('index'),
+                bm.RunTime(input.bm_pileup).to_series('pileup')
             ],
             axis=1
         ).to_csv(output.tab, sep='\t', index=True, index_label='time')
@@ -197,13 +135,13 @@ rule strep_bm_get_gatk_runtime:
 
         pd.concat(
             [
-                RunTime(input.bm_align).to_series('align'),
-                RunTime(input.bm_sort).to_series('sort'),
-                RunTime(input.bm_mark).to_series('mark'),
-                RunTime(input.bm_index).to_series('index'),
-                RunTime(input.bm_target).to_series('target'),
-                RunTime(input.bm_realign).to_series('realign'),
-                RunTime(input.bm_var).to_series('variant')
+                bm.RunTime(input.bm_align).to_series('align'),
+                bm.RunTime(input.bm_sort).to_series('sort'),
+                bm.RunTime(input.bm_mark).to_series('mark'),
+                bm.RunTime(input.bm_index).to_series('index'),
+                bm.RunTime(input.bm_target).to_series('target'),
+                bm.RunTime(input.bm_realign).to_series('realign'),
+                bm.RunTime(input.bm_var).to_series('variant')
             ],
             axis=1
         ).to_csv(output.tab, sep='\t', index=True, index_label='time')
@@ -221,13 +159,8 @@ rule strep_bm_get_kestrel_runtime:
 
         pd.concat(
             [
-                RunTime(input.bm_table).to_series('table'),
-                RunTime(input.bm_var).to_series('variant')
+                bm.RunTime(input.bm_table).to_series('table'),
+                bm.RunTime(input.bm_var).to_series('variant')
             ],
             axis=1
         ).to_csv(output.tab, sep='\t', index=True, index_label='time')
-
-#
-# File Sizes
-#
-

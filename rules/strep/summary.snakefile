@@ -6,38 +6,7 @@ import os
 import pandas as pd
 import numpy as np
 
-
-###################
-### Definitions ###
-###################
-
-def _summarize_runtime_table(tab_file_name, accession):
-    """
-    Generate a series by adding all the runtimes for each type (real, sys, user).
-
-    :param tab_file_name: Name of the table file with runtimes for each step.
-    :param accession: Sample accession.
-    """
-
-    summary_series = pd.read_table(tab_file_name, header=0, index_col=0).apply(sum, axis=1)
-
-    summary_series.name = accession
-
-    return summary_series
-
-def _summarize_trace_table(tab_file_name, accession):
-    """
-    Get a series describing the maximum vss and rss from a table of rss and vss for each step.
-
-    :param tab_file_name: Table of rss and vss for each step.
-    :param accession: Sample accession.
-    """
-
-    summary_series = pd.read_table(tab_file_name, header=0, index_col=0).apply(max, axis=1)
-
-    summary_series.name = accession
-
-    return summary_series
+from kescaseslib import bm
 
 
 #############
@@ -323,7 +292,7 @@ rule strep_summary_merge_trace_tables:
 
         pd.concat(
             [
-                _summarize_trace_table(
+                bm.summarize_trace_table(
                     'local/strep/results/{}/{}/bm/trace.tab'.format(accession, wildcards.pipeline), accession
                 ) for accession in STREP_ACCESSIONS
             ],
@@ -342,7 +311,7 @@ rule strep_summary_merge_runtime_tables:
 
         pd.concat(
             [
-                _summarize_runtime_table(
+                bm.summarize_runtime_table(
                     'local/strep/results/{}/{}/bm/time.tab'.format(accession, wildcards.pipeline), accession
                 ) for accession in STREP_ACCESSIONS
             ],
