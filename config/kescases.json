@@ -18,5 +18,8 @@
     "reference": "data/ecoli/NC_000913.fasta.gz",
     "accessions": "data/ecoli/Accessions"
   },
+  "na12878": {
+    "accessions": "data/na12878/Accessions"
+  },
   "rand_seed": "data/prime_seeds"
 }

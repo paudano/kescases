@@ -74,3 +74,6 @@ include: 'rules/mlst/mlst.snakefile'
 
 ### E. coli ###
 include: 'rules/ecoli/ecoli.snakefile'
+
+### NA12878 ###
+include: 'rules/na12878/na12878.snakefile'

@@ -15,6 +15,7 @@ ECOLI_REF = 'local/ecoli/reference/NC_000913.fasta'
 # Indexes
 ECOLI_REF_FAI = ECOLI_REF + '.fai'
 ECOLI_BWA_INDEX_LIST=['{}.{}'.format(ECOLI_REF, ext) for ext in ('amb', 'ann', 'bwt', 'pac', 'sa')]
+ECOLI_PICARD_INDEX=ECOLI_REF.replace('.fasta', '.dict')
 ECOLI_RTG_INDEX_FLAG='local/ecoli/reference/rtg/done'
 ECOLI_REF_BED = ECOLI_REF + '.bed'
 
@@ -45,6 +46,21 @@ rule ecoli_rtg_index_reference:
 #
 # Reference
 #
+
+# ecoli_reference_index_picard
+#
+# Index reference for Picard.
+rule ecoli_reference_index_picard:
+    input:
+        ref=ECOLI_REF
+    output:
+        index=ECOLI_PICARD_INDEX
+    shell:
+        """java -jar {tools.picard} """
+            """CreateSequenceDictionary """
+            """R={input.ref} """
+            """O={output.index}"""
+
 
 # ecoli_reference_make_bed
 #
@@ -113,7 +129,7 @@ rule ecoli_cp_reference:
 # Compress contigs
 rule ecoli_data_extract_contigs:
     input:
-        tar_gz='local/strep/temp/data/Dataset_S7.tar.gz'
+        tar_gz='local/ecoli/temp/data/Dataset_S7.tar.gz'
     output:
         fa_gz='local/ecoli/samples/{accession}.fa.gz'
     run:
@@ -124,6 +140,6 @@ rule ecoli_data_extract_contigs:
 # Get contigs.
 rule ecoli_data_dl_contigs:
     output:
-        tar_gz=temp('local/strep/temp/data/Dataset_S7.tar.gz')
+        tar_gz=temp('local/ecoli/temp/data/Dataset_S7.tar.gz')
     shell:
         """wget -O {output.tar_gz} http://genome.cshlp.org/content/suppl/2014/11/11/gr.180190.114.DC1/Dataset_S7.tar.gz"""

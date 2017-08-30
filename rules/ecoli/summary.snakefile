@@ -15,8 +15,8 @@ import numpy as np
 # Make consensus size distribution histogram.
 rule ecoli_summary_plot_consensus_size:
     input:
-        tab_con='local/ecoli/summary/table/consensus_len.tab',
-        tab_hap='local/ecoli/summary/table/haplotype_len.tab'
+        tab_con='local/ecoli/summary/kestrel/consensus_len.tab',
+        tab_hap='local/ecoli/summary/kestrel/haplotype_len.tab'
     output:
         pdf='local/ecoli/summary/plots/con_size_hist.pdf'
     shell:
@@ -27,12 +27,15 @@ rule ecoli_summary_plot_consensus_size:
 # Summary tables
 #
 
+# ecoli_summary_summary_size_table
+#
+# Get average consensus and haplotype sizes.
 rule ecoli_summary_summary_size_table:
     input:
-        tab_con='local/ecoli/summary/table/consensus_len.tab',
-        tab_hap='local/ecoli/summary/table/haplotype_len.tab'
+        tab_con='local/ecoli/summary/kestrel/consensus_len.tab',
+        tab_hap='local/ecoli/summary/kestrel/haplotype_len.tab'
     output:
-        tab='local/ecoli/summary/table/summary_len.tab'
+        tab='local/ecoli/summary/kestrel/summary_len.tab'
     run:
 
         # Read
@@ -61,10 +64,10 @@ rule ecoli_summary_summary_size_table:
 # Generate summary statistics for all calls (merge from samples).
 rule ecoli_summary_make_summary_table:
     input:
-        tab_con='local/ecoli/summary/table/call_stats_con.tab',
-        tab_hap='local/ecoli/summary/table/call_stats_hap.tab'
+        tab_con='local/ecoli/summary/{pipeline}/call_stats_con.tab',
+        tab_hap='local/ecoli/summary/{pipeline}/call_stats_hap.tab'
     output:
-        tab='local/ecoli/summary/table/call_stats_summary.tab'
+        tab='local/ecoli/summary/{pipeline,kestrel|gatk}/call_stats_summary.tab'
     run:
         
         # Get tables
@@ -96,10 +99,10 @@ rule ecoli_summary_make_summary_table:
 # Merge call stats with consensus regions.
 rule ecoli_summary_get_table:
     input:
-        call='local/ecoli/temp/table/call_stats_{varset}.tab',
-        con_size='local/ecoli/summary/table/consensus_len.tab'
+        call='local/ecoli/temp/{pipeline}/call_stats_{varset}.tab',
+        con_size='local/ecoli/summary/kestrel/consensus_len.tab'
     output:
-        tab='local/ecoli/summary/table/call_stats_{varset,con|hap}.tab'
+        tab='local/ecoli/summary/{pipeline,kestrel|gatk}/call_stats_{varset,con|hap}.tab'
     run:
 
         # Merge
@@ -124,9 +127,9 @@ rule ecoli_summary_get_table:
 # Get call statistics for all samples.
 rule ecoli_summary_get_call_stats:
     input:
-        tab=expand('local/ecoli/results/{accession}/kestrel/variants_{{varset}}.tab', accession=ECOLI_ACCESSIONS)
+        tab=expand('local/ecoli/results/{accession}/{{pipeline}}/variants_{{varset}}.tab', accession=ECOLI_ACCESSIONS)
     output:
-        tab=temp('local/ecoli/summary/table/call_stats_{varset,con|hap}.tab')
+        tab=temp('local/ecoli/temp/{pipeline,kestrel|gatk}/call_stats_{varset,con|hap}.tab')
     run:
 
         # Initialize counts
@@ -142,7 +145,7 @@ rule ecoli_summary_get_call_stats:
         # Get counts for each sample
         for accession in ECOLI_ACCESSIONS:
             call = pd.read_table(
-                'local/ecoli/results/{}/kestrel/variants_{}.tab'.format(accession, wildcards.varset),
+                'local/ecoli/results/{}/{}/variants_{}.tab'.format(accession, wildcards.pipeline, wildcards.varset),
                 header=0,
                 usecols=['CALL'],
                 squeeze=True
@@ -172,7 +175,7 @@ rule ecoli_summary_get_haplotype_size:
     input:
         bed=expand('local/ecoli/results/{accession}/kestrel/haplotypes.bed', accession=ECOLI_ACCESSIONS)
     output:
-        tab='local/ecoli/summary/table/haplotype_len.tab'
+        tab='local/ecoli/summary/kestrel/haplotype_len.tab'
     run:
 
         # Initialize size
@@ -195,7 +198,7 @@ rule ecoli_summary_get_consensus_size:
     input:
         bed=expand('local/ecoli/results/{accession}/kestrel/consensus_regions.bed', accession=ECOLI_ACCESSIONS)
     output:
-        tab='local/ecoli/summary/table/consensus_len.tab'
+        tab='local/ecoli/summary/kestrel/consensus_len.tab'
     run:
 
         # Initialize size

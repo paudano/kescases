@@ -109,8 +109,8 @@ rule ecoli_make_consensus_bed:
         bam='local/ecoli/results/{accession}/assemble/contig.bam',
         bed='local/ecoli/results/{accession}/assemble/no_consensus.bed'
     output:
-        tmp_con='local/ecoli/temp/{accession}/kestrel/no_consensus_bed6.bed',
-        tmp_aln='local/ecoli/temp/{accession}/kestrel/contigs_bed6.bed',
+        tmp_con=temp('local/ecoli/temp/{accession}/kestrel/no_consensus_bed6.bed'),
+        tmp_aln=temp('local/ecoli/temp/{accession}/kestrel/contigs_bed6.bed'),
         bed='local/ecoli/results/{accession}/kestrel/consensus_regions.bed'
     shell:
         """awk -vOFS="\\t" '{{print $1, $2, $3, $4, "0", "+"}}' {input.bed} > {output.tmp_con}; """

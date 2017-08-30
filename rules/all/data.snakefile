@@ -13,8 +13,8 @@ rule data_get_sample_fastq:
     input:
         sra='local/{exp}/temp/samples/{accession}.sra'
     output:
-        fastq_1='local/{exp,strep|mlst}/samples/{accession}/{accession}_1.fastq.gz',
-        fastq_2='local/{exp,strep|mlst}/samples/{accession}/{accession}_2.fastq.gz'
+        fastq_1='local/{exp,strep|mlst|na12878}/samples/{accession}/{accession}_1.fastq.gz',
+        fastq_2='local/{exp,strep|mlst|na12878}/samples/{accession}/{accession}_2.fastq.gz'
     log:
         'local/{exp}/samples/log/{accession}/strep_get_sample_fastq.log'
     run:
@@ -27,7 +27,7 @@ rule data_get_sample_fastq:
 # Download SRA file for sample.
 rule data_get_sample_sra:
     output:
-        sra=temp('local/{exp,strep|mlst}/temp/samples/{accession,(SRR|ERR)\d+}.sra')
+        sra=temp('local/{exp,strep|mlst|na12878}/temp/samples/{accession,(SRR|ERR)\d+}.sra')
     log:
         'local/{exp}/samples/log/{accession}/strep_get_sample_sra.log'
     run:

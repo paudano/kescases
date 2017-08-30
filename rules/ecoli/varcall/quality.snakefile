@@ -111,10 +111,10 @@ def _set_filter_and_id_ecoli(df, filter_container):
 # Add ID and FILTER columns.
 rule ecoli_annotate_variant_calls:
     input:
-        tab='local/ecoli/temp/{accession}/kestrel/vcfeval/{varset}/variants_unannotated.tab',
+        tab='local/ecoli/temp/{accession}/{pipeline}/vcfeval/{varset}/variants_unannotated.tab',
         nc_bed='local/ecoli/results/{accession}/assemble/no_consensus.bed'
     output:
-        tab='local/ecoli/results/{accession}/{pipeline}/variants_{varset}.tab'
+        tab='local/ecoli/results/{accession}/{pipeline,kestrel|gatk}/variants_{varset}.tab'
     run:
 
         # Read variants and the blacklist
@@ -137,12 +137,12 @@ rule ecoli_annotate_variant_calls:
 # Merge Kestrel TP, FP, and FN calls annotated by vcfeval. Add a filed for the alignment depth.
 rule ecoli_variant_merge_kestrel_vcf_eval:
     input:
-        tp='local/ecoli/temp/{accession}/kestrel/vcfeval/{varset}/tp.tab',
-        fp='local/ecoli/temp/{accession}/kestrel/vcfeval/{varset}/fp.tab',
-        fn='local/ecoli/temp/{accession}/kestrel/vcfeval/{varset}/fn.tab',
+        tp='local/ecoli/temp/{accession}/{pipeline}/vcfeval/{varset}/tp.tab',
+        fp='local/ecoli/temp/{accession}/{pipeline}/vcfeval/{varset}/fp.tab',
+        fn='local/ecoli/temp/{accession}/{pipeline}/vcfeval/{varset}/fn.tab',
         ref_bed=ECOLI_REF_BED
     output:
-        tab=temp('local/ecoli/temp/{accession}/kestrel/vcfeval/{varset}/variants_unannotated.tab')
+        tab=temp('local/ecoli/temp/{accession}/{pipeline,kestrel|gatk}/vcfeval/{varset}/variants_unannotated.tab')
     run:
 
         # Get merged variants
@@ -163,9 +163,9 @@ rule ecoli_variant_merge_kestrel_vcf_eval:
 # Convert compared variants to a table file
 rule ecoli_variant_vcfeval_to_table:
     input:
-        vcf='local/ecoli/results/{accession}/kestrel/vcfeval/{varset}/{call}.vcf.gz',
+        vcf='local/ecoli/results/{accession}/{pipeline}/vcfeval/{varset}/{call}.vcf.gz',
     output:
-        tab=temp('local/ecoli/temp/{accession}/kestrel/vcfeval/{varset,con|hap}/{call,tp|fp|fn}.tab')
+        tab=temp('local/ecoli/temp/{accession}/{pipeline,kestrel|gatk}/vcfeval/{varset,con|hap}/{call,tp|fp|fn}.tab')
     run:
 
         call_type = wildcards.call.upper()
@@ -184,19 +184,19 @@ rule ecoli_variant_vcfeval_to_table:
 # Compare variants in GATK or Kestrel calls to the assembly calls.
 rule ecoli_variant_vcfeval:
     input:
-        vcf='local/ecoli/results/{accession}/kestrel/variants.vcf.gz',
+        vcf='local/ecoli/results/{accession}/{pipeline}/variants.vcf.gz',
         base_vcf='local/ecoli/results/{accession}/assemble/variants.vcf.gz',
         ref=ECOLI_REF,
         rtg_flag=ECOLI_RTG_INDEX_FLAG,
         con_bed='local/ecoli/results/{accession}/kestrel/consensus_regions.bed',
         hap_bed='local/ecoli/results/{accession}/kestrel/haplotypes.bed'
     output:
-        tp='local/ecoli/results/{accession}/kestrel/vcfeval/{varset,con|hap}/tp.vcf.gz',
-        fp='local/ecoli/results/{accession}/kestrel/vcfeval/{varset,con|hap}/fp.vcf.gz',
-        fn='local/ecoli/results/{accession}/kestrel/vcfeval/{varset,con|hap}/fn.vcf.gz',
-        bl='local/ecoli/results/{accession}/kestrel/vcfeval/{varset,con|hap}/tp-baseline.vcf.gz'
+        tp='local/ecoli/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/{varset,con|hap}/tp.vcf.gz',
+        fp='local/ecoli/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/{varset,con|hap}/fp.vcf.gz',
+        fn='local/ecoli/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/{varset,con|hap}/fn.vcf.gz',
+        bl='local/ecoli/results/{accession}/{pipeline,kestrel|gatk}/vcfeval/{varset,con|hap}/tp-baseline.vcf.gz'
     log:
-        'local/ecoli/results/{accession}/kestrel/log/kestrel_variant_vcfeval_{varset}.log'
+        'local/ecoli/results/{accession}/{pipeline}/log/{pipeline}_variant_vcfeval_{varset}.log'
     run:
 
         # Get regions based varset wildcard

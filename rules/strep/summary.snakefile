@@ -147,9 +147,10 @@ rule strep_summary_bam_vs_ikc_size:
         blacklist='data/strep/NC_003028.blacklist.tab'
     output:
         pdf='local/strep/summary/plots/size/size_bam_vs_ikc.pdf',
+        eps='local/strep/summary/plots/size/size_bam_vs_ikc.eps',
         pdf_multi='local/strep/summary/plots/size/multipart/size_bam_vs_ikc.pdf',
     shell:
-        """Rscript scripts/plots/bam_vs_ikc_file_size.R {input.size_tab} {input.blacklist} {output.pdf} {output.pdf_multi}"""
+        """Rscript scripts/plots/bam_vs_ikc_file_size.R {input.size_tab} {input.blacklist} {output.pdf} {output.eps} {output.pdf_multi}"""
 
 
 #

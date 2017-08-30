@@ -29,6 +29,7 @@ with open(config['ecoli']['accessions'], 'r') as in_file:
 include: 'data.snakefile'
 include: 'varcall/assembly.snakefile'
 include: 'varcall/kestrel.snakefile'
+include: 'varcall/gatk.snakefile'
 include: 'varcall/quality.snakefile'
 include: 'summary.snakefile'
 
@@ -49,12 +50,12 @@ rule ecoli_figures:
 # Make E. coli summary tables.
 rule ecoli_tables:
     input:
-        'local/ecoli/summary/table/consensus_len.tab',
-        'local/ecoli/summary/table/haplotype_len.tab',
-        'local/ecoli/summary/table/summary_len.tab',
-        'local/ecoli/summary/table/call_stats_con.tab',
-        'local/ecoli/summary/table/call_stats_hap.tab',
-        'local/ecoli/summary/table/call_stats_summary.tab'
+        'local/ecoli/summary/kestrel/consensus_len.tab',
+        'local/ecoli/summary/kestrel/haplotype_len.tab',
+        'local/ecoli/summary/kestrel/summary_len.tab',
+        'local/ecoli/summary/kestrel/call_stats_con.tab',
+        'local/ecoli/summary/kestrel/call_stats_hap.tab',
+        'local/ecoli/summary/kestrel/call_stats_summary.tab'
 
 # ecoli_fetch
 #
