@@ -1,0 +1,79 @@
+track KES_VAR_DEPTH
+shortLabel KES_VAR_DEPTH
+longLabel Kestrel TP call depth
+description Depth of true-positive Kestrel calls
+visibility full
+maxHeightPixels 32:64:128
+alwaysZero on
+type bigWig
+bigDataUrl var_depth_kestrel.bw
+
+track GATK_VAR_DEPTH
+shortLabel GATK_VAR_DEPTH
+longLabel GATK TP call depth
+description Depth of true-positive GATK calls
+visibility full
+maxHeightPixels 32:64:128
+alwaysZero on
+type bigWig
+bigDataUrl var_depth_gatk.bw
+
+track KES_ONLY
+shortLabel KES_ONLY
+longLabel Kestrel-only variant regions
+description Regions were Kestrel called TP variants in samples where other methods did not.
+itemRgb On
+visibility pack
+type bigBed
+bigDataUrl kes_only.bb
+labelOnFeature on
+
+track ECOLI_GENES
+shortLabel ECOLI_GENES
+longLabel E. coli Genes
+description E. coli Genes
+itemRgb On
+visibility pack
+type bigBed
+bigDataUrl gene.bb
+labelOnFeature on
+
+track ECOLI_RNA
+shortLabel ECOLI_RNA
+longLabel E. coli RNA loci
+description E. coli RNA loci
+itemRgb On
+visibility pack
+type bigBed
+bigDataUrl rna.bb
+labelOnFeature on
+
+track ECOLI_REPEAT
+shortLabel ECOLI_REPEAT
+longLabel E. coli Repetitive Elements
+description E. coli Repetitive Elements
+itemRgb On
+visibility pack
+type bigBed
+bigDataUrl repeat.bb
+labelOnFeature on
+
+track ECOLI_ME
+shortLabel ECOLI_ME
+longLabel E. coli Mobile Elements
+description E. coli Mobile Elements
+itemRgb On
+visibility pack
+type bigBed
+bigDataUrl mobile.bb
+labelOnFeature on
+
+track ECOLI_MISC
+shortLabel ECOLI_MISC
+longLabel E. coli Misc Annotations
+description E. coli Misc Annotations
+itemRgb On
+visibility pack
+type bigBed
+bigDataUrl misc.bb
+labelOnFeature on

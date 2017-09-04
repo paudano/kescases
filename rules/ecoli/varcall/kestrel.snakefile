@@ -101,6 +101,7 @@ rule ecoli_kestrel_make_ikc:
             """wc -l > {output.seg_count}; """
         """rm -rf local/ecoli/temp/{wildcards.accession}/kanalyze"""
 
+
 # ecoli_make_consensus_bed
 #
 # Get a BED file of consensus regions.

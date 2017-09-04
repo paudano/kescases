@@ -32,6 +32,7 @@ include: 'varcall/kestrel.snakefile'
 include: 'varcall/gatk.snakefile'
 include: 'varcall/quality.snakefile'
 include: 'summary.snakefile'
+include: 'tracks.snakefile'
 
 
 #############

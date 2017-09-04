@@ -213,3 +213,108 @@ rule ecoli_summary_get_consensus_size:
 
         # Write
         con_size.to_csv(output.tab, sep='\t', header=True, index_label='SAMPLE')
+
+
+#
+# Kestrel variant call depth
+#
+
+# ecoli_summary_tp_call_graph
+#
+# Kestrel-only BED graph.
+rule ecoli_summary_tp_call_graph:
+    input:
+        bed='local/ecoli/temp/summary/bed/variant_depth_{pipeline}.bed',
+        fai=ECOLI_REF_FAI
+    output:
+        bed='local/ecoli/summary/bed/variant_depth_{pipeline,kestrel|gatk}.bed'
+    shell:
+        """echo -e "#CHROM\tPOS\tEND\tDEPTH" >{output.bed}; """
+        """bedtools genomecov -bg -i {input.bed} -g {input.fai} """
+        """>>{output.bed}"""
+
+# ecoli_summary_tp_call_depth
+#
+# Merge BED records from all samples into one file.
+rule ecoli_summary_tp_call_depth:
+    input:
+        bed=expand('local/ecoli/results/{accession}/{{pipeline}}/bed/variants_con_tp.bed', accession=ECOLI_ACCESSIONS)
+    output:
+        bed=temp('local/ecoli/temp/summary/bed/variant_depth_{pipeline,kestrel|gatk}.bed')
+    shell:
+        """sort -k1,1 -k2,2n -m {input.bed} """
+        """>{output.bed}"""
+
+#
+# Merged variant calls
+#
+
+# ecoli_summary_merge_variants_in_region
+#
+# Merge variants in one region.
+rule ecoli_summary_merge_variants_in_region:
+    input:
+        bed=expand('local/ecoli/results/{accession}/{{pipeline}}/bed/variants_con_{{call_type}}.bed', accession=ECOLI_ACCESSIONS)
+    output:
+        bed='local/ecoli/summary/bed/regions/region_{pipeline}_{call_type}_{pos}_{end}.bed'
+    run:
+
+        loc_pos = int(wildcards.pos)
+        loc_end = int(wildcards.end)
+
+        # Read each sample, subset, and add to list
+        df_list = list()
+
+        for accession in ECOLI_ACCESSIONS:
+            df = pd.read_table(
+                'local/ecoli/results/{}/{}/bed/variants_con_tp.bed'.format(
+                    accession, wildcards.pipeline, wildcards.call_type
+                ),
+                header=0
+            )
+
+            df['ACCESSION'] = accession
+
+            df = df.loc[df.apply(lambda row: row['END'] >= loc_pos and row['POS'] <= loc_end, axis=1)]
+
+            df_list.append(df)
+
+        # Merge
+        df = pd.concat(df_list, axis=0)
+
+        df.sort_values(['#CHROM', 'POS'], inplace=True)
+
+        # Write
+        df.to_csv(output.bed, sep='\t', index=False)
+
+
+#
+# Kestrel-only coverage BED
+#
+
+# ecoli_summary_kes_only_bed_graph
+#
+# Kestrel-only BED graph.
+rule ecoli_summary_kes_only_bed_graph:
+    input:
+        bed='local/ecoli/temp/summary/bed/kes_only_merged.bed',
+        fai=ECOLI_REF_FAI
+    output:
+        bed='local/ecoli/summary/bed/kes_only_merged.bed'
+    shell:
+        """echo -e "#CHROM\tPOS\tEND\tLENGTH\tDEPTH" >{output.bed}; """
+        """bedtools genomecov -bg -i {input.bed} -g {input.fai} | """
+        """awk -vOFS="\t" '{{print $1, $2, $3, $3 - $2, $4}}' """
+        """>>{output.bed}"""
+
+# ecoli_summary_bed_merge_kes_only
+#
+# Merge BED records from all samples into one file.
+rule ecoli_summary_bed_merge_kes_only:
+    input:
+        bed=expand('local/ecoli/results/{accession}/kestrel/bed/regions_no_gatk.bed', accession=ECOLI_ACCESSIONS)
+    output:
+        bed=temp('local/ecoli/temp/summary/bed/kes_only_merged.bed')
+    shell:
+        """sort -k1,1 -k2,2n -m {input.bed} """
+        """>{output.bed}"""

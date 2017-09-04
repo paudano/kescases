@@ -14,7 +14,7 @@ with open(config['na12878']['accessions'], 'r') as in_file:
     for line in in_file:
         line = line.strip()
 
-        if not line:
+        if not line or line.startswith('#'):
             continue
 
         NA12878_ACCESSIONS.append(line)

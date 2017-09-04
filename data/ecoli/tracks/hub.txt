@@ -1,0 +1,5 @@
+hub NC_000913.3
+shortLabel NC_000913.3_Kestrel
+longLabel NC_000913.3 with Kestrel Annotations
+genomesFile genomes.txt
+email kestrel@localdomain

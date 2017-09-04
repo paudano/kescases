@@ -75,6 +75,12 @@ bin/bedtools bin/bamToBed:
 	ln -sf ../build/bedtools/bedtools2/bin/bedtools bin/
 	ln -sf ../build/bedtools/bedtools2/bin/bamToBed bin/
 
+bin/bedToBigBed bin/faToTwoBit bin/bedGraphToBigWig:
+	make -C build/ucsc dl_complete
+	ln -sf ../build/ucsc/bedToBigBed bin/
+	ln -sf ../build/ucsc/faToTwoBit bin/
+	ln -sf ../build/ucsc/bedGraphToBigWig bin/
+
 .PHONY: clean
 clean:
 	make -C build/time clean

@@ -11,6 +11,7 @@ import pandas as pd
 
 # Reference
 ECOLI_REF = 'local/ecoli/reference/NC_000913.fasta'
+ECOLI_REF_GB = 'data/ecoli/NC_000913.3.gb'
 
 # Indexes
 ECOLI_REF_FAI = ECOLI_REF + '.fai'

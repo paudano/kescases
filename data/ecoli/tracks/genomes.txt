@@ -1,0 +1,7 @@
+genome NC_000913.3
+trackDb NC_000913.3/trackDb.txt
+twoBitPath NC_000913.3/NC_000913.3.2bit
+description E. coli (NC_000913.3)
+organism E. coli
+scientificName Escherichia coli
+defaultPos NC_000913.3:1245184-1246236

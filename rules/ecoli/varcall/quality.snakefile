@@ -106,6 +106,138 @@ def _set_filter_and_id_ecoli(df, filter_container):
 ### Rules ###
 #############
 
+
+#
+# Kestrel-only coverage BED
+#
+
+# ecoli_bed_intersect_variant_regions
+#
+# Get variants in Kestrel-only regions.
+rule ecoli_bed_intersect_variant_regions:
+    input:
+        variants='local/ecoli/results/{accession}/kestrel/bed/variants_con_tp.bed',
+        regions='local/ecoli/results/{accession}/kestrel/bed/regions_no_gatk.bed'
+    output:
+        bed='local/ecoli/results/{accession}/kestrel/bed/variants_no_gatk.bed',
+    shell:
+        """bedtools intersect -a {input.variants} -b {input.regions} -wa -u """
+        """>{output.bed}"""
+
+# ecoli_bed_intersect_kes_no_gatk
+#
+# Find variant in regions GATK did not call.
+rule ecoli_bed_regions_kes_no_gatk:
+    input:
+        kes='local/ecoli/temp/{accession}/kestrel/bed/variants_con_tp_50.bed',
+        gatk='local/ecoli/temp/{accession}/gatk/bed/variants_con_tp_50.bed',
+        fai=ECOLI_REF_FAI
+    output:
+        kes='local/ecoli/results/{accession}/kestrel/bed/regions_no_gatk.bed'
+    shell:
+        """bedtools intersect -a {input.kes} -b {input.gatk} -wa -v -header -sorted | """
+        """bedtools slop -i stdin -g {input.fai} -b -50 | """
+        """awk -vOFS="\\t" '$3 > $2' """
+        """>{output.kes}"""
+
+# ecoli_bed_pad_regions
+#
+# Pad BED regions.
+rule ecoli_bed_pad_regions:
+    input:
+        bed='local/ecoli/results/{accession}/{pipeline}/bed/variants_{varset}_tp.bed',
+        fai=ECOLI_REF_FAI
+    output:
+        bed=temp('local/ecoli/temp/{accession}/{pipeline,kestrel|gatk}/bed/variants_{varset}_tp_{pad}.bed')
+    shell:
+        """bedtools slop -i {input.bed} -g {input.fai} -b {wildcards.pad} -header | """
+        """bedtools merge """
+        """>{output.bed}"""
+
+# ecoli_bed_variant_to_bed
+#
+# Make BED of variant calls.
+rule ecoli_bed_variant_to_bed:
+    input:
+        tab='local/ecoli/results/{accession}/{pipeline}/variants_{varset}.tab'
+    output:
+        bed='local/ecoli/results/{accession}/{pipeline,kestrel|gatk}/bed/variants_{varset}_{call_type}.bed'
+    run:
+
+        call_type = wildcards.call_type.upper()
+
+        line_count = 0
+
+        with open(input.tab, 'r') as in_file:
+            with open(output.bed, 'w') as out_file:
+
+                # Discard first line
+                line = next(in_file)
+
+                # Write header
+                out_file.write('#CHROM\tPOS\tEND\tID\tTYPE\tLEN\tCALL\n')
+
+                # Read each line
+                for line in in_file:
+                    line_count += 1
+
+                    line = line.strip()
+
+                    if not line:
+                        continue
+
+                    # Tokenize
+                    tok = line.split('\t')
+
+                    if len(tok) not in {12, 14}:
+                        raise ValueError('Expected 12 or 14 fields, received {} (line={})'.format(len(tok), line_count))
+
+                    # Only TP calls
+                    if tok[-1] != call_type and call_type != 'ALL':
+                        continue
+
+                    # Get attributes
+                    var_chrom = tok[0]
+                    var_pos = int(tok[1]) - 1
+                    var_id = tok[2]
+                    var_len_ref = len(tok[3])
+                    var_len_alt = len(tok[4])
+                    var_call = tok[-1]
+
+                    # Check
+                    if var_len_ref != 1 and var_len_alt != 1:
+                        raise ValueError('REF or ALT length must be 1: REF={}, ALT={} (line={})'.format(tok[3], tok[4], line_count))
+
+                    # Get attributes
+                    if var_len_ref == 1 and var_len_alt == 1:
+
+                        # SNP
+                        var_type = 'SNP'
+                        var_len = 1
+                        var_end = var_pos + 1
+
+                    elif var_len_ref > 1:
+
+                        # DEL
+                        var_type = 'DEL'
+                        var_len = var_len_ref
+                        var_end = var_pos + var_len_ref
+
+                    else:
+
+                        # INS
+                        var_type = 'INS'
+                        var_len = var_len_alt
+                        var_end = var_pos + 1
+
+                    # Write
+                    out_file.write('\t'.join((var_chrom, str(var_pos), str(var_end), var_id, var_type, str(var_len), var_call)))
+                    out_file.write('\n')
+
+#
+# Annotate calls
+#
+
 # ecoli_annotate_variant_calls
 #
 # Add ID and FILTER columns.
@@ -131,6 +263,11 @@ rule ecoli_annotate_variant_calls:
 
         # Write
         df.to_csv(output.tab, sep='\t', index=False)
+
+
+#
+# VCFEVAL
+#
 
 # ecoli_variant_merge_kestrel_vcf_eval
 #
@@ -228,6 +365,11 @@ rule ecoli_variant_vcfeval:
                 """cp {input.vcf} {output.tp}; """
                 """cp {input.vcf} {output.fp}"""
             )
+
+
+#
+# Get haplotype regions
+#
 
 # ecoli_variant_get_haplotype_regions
 #
