@@ -38,9 +38,10 @@ rule strep_phylogeny_variant:
         ani_ident='local/strep/ani/ani_tables/ANIm_percentage_identity.tab',
         variants='local/strep/summary/kestrel/variants.tab'
     output:
-        pdf='local/strep/summary/plots/phylo/phylo_variant.pdf'
+        pdf='local/strep/summary/plots/phylo/phylo_variant.pdf',
     shell:
         """Rscript scripts/plots/strep_phylo_variant.R {input.ani_ident} {input.variants} {output.pdf}"""
+
 
 # strep_phylogeny_serotype
 #
